@@ -1,0 +1,131 @@
+/*
+ * Base CSS du cours : fournie telle quelle dès l'étape 1, jamais modifiée ensuite.
+ * Noir et blanc seulement : les couleurs viennent des scènes.
+ * Sections : 1. variables · 2. reset · 3. page · 4. boutons · 5. debug · 6. scènes
+ */
+
+/* 1. Variables */
+:root {
+    --black: #000;
+    --white: #fff;
+    --space-300: 0.5rem;
+    --space-500: 1rem;
+    --radius: 0.75rem;
+    --page-width: 50rem;
+    --font: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+/* 2. Reset */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+}
+
+canvas {
+    display: block;
+}
+
+/* 3. Page : une colonne de la hauteur de l'écran, sans défilement, en deux blocs (titre et boutons, puis scènes) */
+body {
+    background-color: var(--black);
+    color: var(--white);
+    font-family: var(--font);
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-500);
+    width: min(100%, var(--page-width));
+    height: 100vh;
+    height: 100svh; /* hauteur de l'écran avec barres du navigateur affichées : stable sur smartphone */
+    margin-inline: auto;
+    padding: var(--space-500);
+}
+
+header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-300);
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* 4. Boutons : contour blanc, inversés au toucher */
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-300);
+}
+
+button {
+    padding: 0.75em 1.75em;
+    border: 1px solid var(--white);
+    border-radius: 2em;
+    background-color: transparent;
+    color: var(--white);
+    font: inherit;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+button:active {
+    background-color: var(--white);
+    color: var(--black);
+}
+
+@media (hover: hover) {
+    button:hover {
+        background-color: var(--white);
+        color: var(--black);
+    }
+}
+
+button:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: 3px;
+}
+
+/* 5. Debug : affiché par le JavaScript, seulement avec #debug dans l'URL */
+#debug {
+    display: none;
+    margin: 0;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+/* 6. Scènes : le bloc prend la hauteur restante, les scènes (un canvas chacune) s'en partagent la hauteur à parts égales */
+.scenes {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-500);
+    min-height: 0;
+}
+
+.scene {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    border: 2px solid var(--white);
+    border-radius: var(--radius);
+    background-color: var(--black);
+}
