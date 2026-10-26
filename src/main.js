@@ -1,4 +1,4 @@
 import SceneBouncingBubbles from "./js/scenarios/BouncingBubbles/SceneBouncingBubbles"
 
-const scene1 = new SceneBouncingBubbles("canvas-scene")
-const scene2 = new SceneBouncingBubbles("canvas-scene-2")
+const scene1 = new SceneBouncingBubbles(10, "canvas-scene")
+const scene2 = new SceneBouncingBubbles(10, "canvas-scene-2")
