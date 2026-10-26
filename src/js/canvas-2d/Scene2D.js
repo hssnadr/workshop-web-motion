@@ -20,6 +20,9 @@ export default class Scene2D {
     get width() { return this.domElement.width }
     get height() { return this.domElement.height }
 
+    /** un pas de simulation : défini par chaque scénario */
+    update() {}
+
     resize() {
         /** size : bitmap = taille affichée × densité de l'écran (homothétie de rapport pixelRatio) */
         this.domElement.measure()

@@ -4,6 +4,7 @@ import { randomRange } from "../../utils/math/MathUtils"
 
 const BUBBLE_RADIUS = 10 // px
 const LINE_WIDTH = 2 // px
+const MAX_SPEED = 1 // px/image
 
 class Bubble {
     constructor(context, x, y, radius) {
@@ -11,9 +12,16 @@ class Bubble {
         this.x = x // px
         this.y = y // px
         this.radius = radius // px
+
+        /** vitesse : un déplacement par image */
+        this.vx = randomRange(-MAX_SPEED, MAX_SPEED) // px/image
+        this.vy = randomRange(-MAX_SPEED, MAX_SPEED) // px/image
     }
 
+    // TODO pédago : draw() modifie l'état, et rien n'efface l'image précédente (traînées) — corrigé à l'étape 2.4
     draw() {
+        this.x += this.vx
+        this.y += this.vy
         circle(this.context, this.x, this.y, this.radius, { isFill: true })
     }
 }
@@ -32,6 +40,10 @@ export default class SceneBouncingBubbles extends Scene2D {
 
         /** init */
         this.resize()
+    }
+
+    update() {
+        this.draw()
     }
 
     draw() {
