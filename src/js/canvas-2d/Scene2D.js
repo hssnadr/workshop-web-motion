@@ -9,7 +9,10 @@ export default class Scene2D {
         this.canvas = document.getElementById(id)
         this.context = this.canvas.getContext('2d')
 
-        // TODO pédago : le CSS étire le canvas, mais son bitmap garde sa taille par défaut (300 × 150 px) → le cercle est déformé (cf. étape 1.3)
+        /** size : bitmap = taille affichée, bordure exclue (rapport 1 px bitmap / 1 px CSS → plus de déformation) */
+        this.canvas.width = this.canvas.clientWidth
+        this.canvas.height = this.canvas.clientHeight
+
         this.draw()
     }
 
