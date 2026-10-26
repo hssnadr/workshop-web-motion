@@ -1,4 +1,4 @@
-import Scene2D from "./js/canvas-2d/Scene2D"
+import SceneBouncingBubbles from "./js/scenarios/BouncingBubbles/SceneBouncingBubbles"
 
-const scene1 = new Scene2D("canvas-scene")
-const scene2 = new Scene2D("canvas-scene-2")
+const scene1 = new SceneBouncingBubbles("canvas-scene")
+const scene2 = new SceneBouncingBubbles("canvas-scene-2")
