@@ -1,4 +1,5 @@
 import DomElement from "../utils/window/DomElement"
+import WindowContext from "../WindowContext"
 
 const CIRCLE_RADIUS = 20 // px
 const STROKE_WIDTH = 2 // px
@@ -6,6 +7,10 @@ const STROKE_WIDTH = 2 // px
 export default class Scene2D {
     constructor(id = "canvas-scene") {
         this.id = id
+
+        /** window context : chaque scène s'inscrit au même registre */
+        this.windowContext = new WindowContext()
+        this.windowContext.addScene(this)
 
         /** canvas + context 2d */
         this.domElement = new DomElement(id)
