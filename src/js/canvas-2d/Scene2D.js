@@ -1,9 +1,6 @@
 import DomElement from "../utils/window/DomElement"
 import WindowContext from "../WindowContext"
 
-const CIRCLE_RADIUS = 20 // px
-const STROKE_WIDTH = 2 // px
-
 export default class Scene2D {
     constructor(id = "canvas-scene") {
         this.id = id
@@ -17,7 +14,7 @@ export default class Scene2D {
         this.canvas = this.domElement.element
         this.context = this.canvas.getContext('2d')
 
-        this.resize()
+        /** pas de resize ici : le scénario l'appelle, une fois son propre état prêt */
     }
 
     get width() { return this.domElement.width }
@@ -37,15 +34,6 @@ export default class Scene2D {
         this.draw()
     }
 
-    draw() {
-        /** style */
-        this.context.strokeStyle = "white"
-        this.context.lineWidth = STROKE_WIDTH
-
-        /** circle : centre = milieu du canvas (origine en haut à gauche, y vers le bas) */
-        this.context.beginPath()
-        this.context.arc(this.width / 2, this.height / 2, CIRCLE_RADIUS, 0, 2 * Math.PI) // un tour complet = 2π rad
-        this.context.stroke()
-        this.context.closePath()
-    }
+    /** contenu : défini par chaque scénario */
+    draw() {}
 }
