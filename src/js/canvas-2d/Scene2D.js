@@ -17,15 +17,21 @@ export default class Scene2D {
         this.canvas = this.domElement.element
         this.context = this.canvas.getContext('2d')
 
-        /** size : bitmap = taille affichée, bordure exclue (rapport 1 px bitmap / 1 px CSS → plus de déformation) */
-        this.canvas.width = this.domElement.width
-        this.canvas.height = this.domElement.height
-
-        this.draw()
+        this.resize()
     }
 
     get width() { return this.domElement.width }
     get height() { return this.domElement.height }
+
+    resize() {
+        /** size : bitmap = taille affichée, bordure exclue (rapport 1 px bitmap / 1 px CSS → plus de déformation) */
+        this.domElement.measure()
+        this.canvas.width = this.domElement.width
+        this.canvas.height = this.domElement.height
+
+        /** changer la taille du bitmap l'efface : on redessine */
+        this.draw()
+    }
 
     draw() {
         /** style */
