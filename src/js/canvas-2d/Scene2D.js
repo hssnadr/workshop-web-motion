@@ -24,10 +24,14 @@ export default class Scene2D {
     get height() { return this.domElement.height }
 
     resize() {
-        /** size : bitmap = taille affichée, bordure exclue (rapport 1 px bitmap / 1 px CSS → plus de déformation) */
+        /** size : bitmap = taille affichée × densité de l'écran (homothétie de rapport pixelRatio) */
         this.domElement.measure()
-        this.canvas.width = this.domElement.width
-        this.canvas.height = this.domElement.height
+        const pixelRatio_ = this.windowContext.pixelRatio
+        this.canvas.width = this.domElement.width * pixelRatio_
+        this.canvas.height = this.domElement.height * pixelRatio_
+
+        /** on dessine toujours en px CSS : le contexte applique la même homothétie */
+        this.context.scale(pixelRatio_, pixelRatio_)
 
         /** changer la taille du bitmap l'efface : on redessine */
         this.draw()

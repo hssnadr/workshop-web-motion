@@ -1,6 +1,8 @@
 /** singleton : l'instance unique, partagée par toutes les scènes */
 let instance = null
 
+const MAX_PIXEL_RATIO = 2 // au-delà, le coût de rendu augmente sans gain visible
+
 export default class WindowContext {
     constructor() {
         if (instance) return instance
@@ -16,4 +18,7 @@ export default class WindowContext {
     addScene(scene) { this.scenes.push(scene) }
 
     resize() { this.scenes.forEach(s => { s.resize() }) }
+
+    /** nombre de pixels de l'écran par px CSS (1 sur un écran standard, 2 ou 3 sur un écran haute densité) */
+    get pixelRatio() { return Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO) }
 }
