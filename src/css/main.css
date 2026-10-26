@@ -1,0 +1,65 @@
+/*
+ * CSS du cours : chaque règle arrive à l'étape qui s'en sert, puis n'est plus modifiée.
+ * Noir et blanc seulement : les couleurs viennent des scènes.
+ */
+
+/* 1. Variables */
+:root {
+    --black: #000;
+    --white: #fff;
+    --space-500: 1rem;
+    --page-width: 40rem;
+    --font: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+/* 2. Reset */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+}
+
+canvas {
+    display: block;
+}
+
+/* 3. Page : une colonne de la hauteur de l'écran, sans défilement */
+body {
+    background-color: var(--black);
+    color: var(--white);
+    font-family: var(--font);
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-500);
+    width: min(100%, var(--page-width));
+    height: 100vh;
+    height: 100svh; /* hauteur de l'écran avec barres du navigateur affichées : stable sur smartphone */
+    margin-inline: auto;
+    padding: var(--space-500);
+}
+
+/* 6. Scènes : le bloc prend la hauteur restante, les scènes (un canvas chacune) s'en partagent la hauteur à parts égales */
+.scenes {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-500);
+    min-height: 0;
+}
+
+/* titre : centré dans le bloc des scènes (marges auto d'un élément flex), à la place que prendra la première scène */
+h1 {
+    margin: auto;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
+}

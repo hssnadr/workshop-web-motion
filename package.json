@@ -1,0 +1,26 @@
+{
+  "name": "workshop-web-motion",
+  "version": "1.0.0",
+  "description": "JS template dedicated to responsive creative websites",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --emptyOutDir",
+    "host": "vite --host"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hssnadr/workshop-web-motion.git"
+  },
+  "keywords": [
+    "js",
+    "canvas2d",
+    "vite"
+  ],
+  "author": "Adrien Husson",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^8.3.5"
+  }
+}
