@@ -21,6 +21,8 @@ export default class Scene2D {
     get width() { return this.domElement.width }
     get height() { return this.domElement.height }
 
+    clear() { this.context.clearRect(0, 0, this.width, this.height) }
+
     /** un pas de simulation : défini par chaque scénario */
     update() {}
 
