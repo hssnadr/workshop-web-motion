@@ -18,10 +18,13 @@ class Bubble {
         this.vy = randomRange(-MAX_SPEED, MAX_SPEED) // px/image
     }
 
-    // TODO pédago : draw() modifie l'état, et rien n'efface l'image précédente (traînées) — corrigé à l'étape 2.4
-    draw() {
+    /** modèle d'état : position au pas n + 1 = position au pas n + vitesse */
+    update() {
         this.x += this.vx
         this.y += this.vy
+    }
+
+    draw() {
         circle(this.context, this.x, this.y, this.radius, { isFill: true })
     }
 }
@@ -42,7 +45,11 @@ export default class SceneBouncingBubbles extends Scene2D {
         this.resize()
     }
 
+    /** état → règle d'évolution → observation */
     update() {
+        this.bubbles.forEach(b => { b.update() })
+
+        this.clear()
         this.draw()
     }
 
