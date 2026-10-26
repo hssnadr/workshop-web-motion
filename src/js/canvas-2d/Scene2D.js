@@ -30,9 +30,6 @@ export default class Scene2D {
 
         /** on dessine toujours en px CSS : le contexte applique la même homothétie */
         this.context.scale(pixelRatio_, pixelRatio_)
-
-        /** changer la taille du bitmap l'efface : on redessine */
-        this.draw()
     }
 
     /** contenu : défini par chaque scénario */
