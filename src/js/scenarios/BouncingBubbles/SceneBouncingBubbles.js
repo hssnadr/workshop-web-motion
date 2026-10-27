@@ -1,8 +1,9 @@
 import Scene2D from "../../canvas-2d/Scene2D"
+import WindowContext from "../../WindowContext"
 import { circle, line } from "../../canvas-2d/Shapes2D"
 import { distance2d, randomRange } from "../../utils/math/MathUtils"
 
-const MAX_SPEED = 1 // px/image
+const MAX_SPEED = 100 // px/s
 
 class Bubble {
     constructor(context, x, y, radius) {
@@ -11,15 +12,19 @@ class Bubble {
         this.y = y // px
         this.radius = radius // px
 
-        /** vitesse : un déplacement par image */
-        this.vx = randomRange(-MAX_SPEED, MAX_SPEED) // px/image
-        this.vy = randomRange(-MAX_SPEED, MAX_SPEED) // px/image
+        /** temps : le singleton du contexte, d'où la bulle lit la durée du pas */
+        this.time = new WindowContext().time
+
+        /** vitesse : un déplacement par seconde, indépendant de la fréquence de l'écran */
+        this.vx = randomRange(-MAX_SPEED, MAX_SPEED) // px/s
+        this.vy = randomRange(-MAX_SPEED, MAX_SPEED) // px/s
     }
 
-    /** modèle d'état : position au pas n + 1 = position au pas n + vitesse */
+    /** modèle d'état : dx = v·dt (px/s × s = px) */
     update(width, height) {
-        this.x += this.vx
-        this.y += this.vy
+        const dt_ = this.time.delta / 1000 // ms → s
+        this.x += this.vx * dt_
+        this.y += this.vy * dt_
 
         /** bords : la vitesse repart toujours vers l'intérieur (idempotent : appliquer la règle deux fois ne change rien) */
         if (this.x < this.radius) this.vx = Math.abs(this.vx)
