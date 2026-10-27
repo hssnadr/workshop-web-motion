@@ -4,6 +4,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js"
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js"
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js"
 import { Composite, Engine, Runner } from "matter-js"
 import Scene3D from "../../canvas-3d/Scene3D"
 import Cube3D from "./Cube3D"
@@ -20,6 +21,7 @@ const STANDARD_GRAVITY = 9.81 // m/s²
 const GRAVITY_SCALE_FACTOR = 5 // gravité du moteur renforcée, pour que les cubes traversent vite le labyrinthe
 const MAZE_WIDTH_RATIO = 2 / 3 // part de la largeur du canvas couverte par une barre du labyrinthe
 const MAZE_OFFSET_RATIO = 1 / 6 // part de la hauteur du canvas entre son centre et une barre
+const MSAA_SAMPLES = 4 // échantillons par pixel, moyennés : antialiasing dans la chaîne d'effets
 
 export default class SceneGravityCubes extends Scene3D {
     constructor(nCubes, id = "canvas-scene") {
@@ -69,10 +71,12 @@ export default class SceneGravityCubes extends Scene3D {
 
         /** post-processing : l'image rendue passe par une chaîne d'effets, chacun reçoit l'image du précédent */
         const { bloomStrength, bloomRadius, bloomThreshold } = this.params
-        this.composer = new EffectComposer(this.renderer)
+        this.composer = new EffectComposer(this.renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: MSAA_SAMPLES })) // taille réglée au resize
         this.composer.addPass(new RenderPass(this.scene, this.camera))
         this.bloomPass = new UnrealBloomPass(new THREE.Vector2(), bloomStrength, bloomRadius, bloomThreshold) // taille réglée au resize
         this.composer.addPass(this.bloomPass)
+        this.outputPass = new OutputPass() // en dernier : conversion linéaire → sRGB
+        this.composer.addPass(this.outputPass)
 
         /** physics : le moteur et sa propre boucle (Runner), qui le fait avancer à chaque image */
         this.engine = Engine.create()
@@ -224,6 +228,7 @@ export default class SceneGravityCubes extends Scene3D {
         this.wallMaze2.dispose()
         this.environmentMap.dispose()
         this.bloomPass.dispose()
+        this.outputPass.dispose()
         this.composer.dispose()
         Composite.clear(this.engine.world)
         Runner.stop(this.runner) // sinon la boucle du moteur continue après destroy
