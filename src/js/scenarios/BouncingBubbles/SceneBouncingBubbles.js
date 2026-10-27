@@ -1,9 +1,10 @@
 import Scene2D from "../../canvas-2d/Scene2D"
 import WindowContext from "../../WindowContext"
 import { circle, line } from "../../canvas-2d/Shapes2D"
-import { distance2d, randomRange } from "../../utils/math/MathUtils"
+import { clamp, distance2d, randomRange } from "../../utils/math/MathUtils"
 
 const MAX_SPEED = 100 // px/s
+const MAX_TILT = 90 // deg : inclinaison qui donne l'effet maximal
 
 class Bubble {
     constructor(context, x, y, radius) {
@@ -54,8 +55,9 @@ export default class SceneBouncingBubbles extends Scene2D {
             this.debugFolder.add(this.params, 'lineWidth', 1, 10)
         }
 
-        /** device motion */
+        /** device motion : inclinaison calibrée, chaque composante dans [−1, 1] */
         this.windowContext.useDeviceOrientation = true
+        this.tilt = { x: 0, y: 0 }
 
         /** init */
         this.generateBubbles()
@@ -103,7 +105,11 @@ export default class SceneBouncingBubbles extends Scene2D {
     }
 
     onDeviceOrientation() {
-        const { alpha, beta, gamma } = this.windowContext.orientation
-        this.debug.domDebug = `alpha ${alpha} · beta ${beta} · gamma ${gamma}`
+        const { beta, gamma } = this.windowContext.orientation
+
+        /** calibrer : angle ramené à [−1, 1] (÷ 90°), puis saturé au-delà (clamp) ; gamma penche à gauche / droite, beta vers l'avant / l'arrière */
+        this.tilt.x = clamp(gamma / MAX_TILT, -1, 1)
+        this.tilt.y = clamp(beta / MAX_TILT, -1, 1)
+        this.debug.domDebug = `inclinaison x ${this.tilt.x.toFixed(2)} · y ${this.tilt.y.toFixed(2)}`
     }
 }
