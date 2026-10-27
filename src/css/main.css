@@ -7,6 +7,7 @@
 :root {
     --black: #000;
     --white: #fff;
+    --space-300: 0.5rem;
     --space-500: 1rem;
     --radius: 1.5rem;
     --page-width: 40rem;
@@ -46,6 +47,65 @@ main {
     height: 100svh; /* hauteur de l'écran avec barres du navigateur affichées : stable sur smartphone */
     margin-inline: auto;
     padding: var(--space-500);
+}
+
+/* en-tête : les boutons (et le debug) au-dessus des scènes, avec de l'air au-dessus et au-dessous */
+header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-300);
+    padding-block: var(--space-300);
+}
+
+/* 4. Boutons : pleins (blanc, texte noir), au contour blanc au toucher */
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-300);
+}
+
+button {
+    padding: 0.75em 2.85em;
+    border: 1px solid var(--white);
+    border-radius: 2em;
+    background-color: var(--white);
+    color: var(--black);
+    font: inherit;
+    font-weight: 900;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent; /* pas de flash bleu au toucher (mobile) : le retour visuel est le :active */
+    transition: background-color 0.15s, color 0.15s;
+}
+
+button:active {
+    background-color: transparent;
+    color: var(--white);
+}
+
+@media (hover: hover) {
+    button:hover {
+        background-color: transparent;
+        color: var(--white);
+    }
+}
+
+button:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: 3px;
+}
+
+/* 5. Debug : affiché par le JavaScript, seulement avec #debug dans l'URL */
+#debug {
+    display: none;
+    margin: 0;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
 }
 
 /* 6. Scènes : le bloc prend la hauteur restante, les scènes (un canvas chacune) s'en partagent la hauteur à parts égales */

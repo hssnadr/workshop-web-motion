@@ -21,6 +21,7 @@
   "author": "Adrien Husson",
   "license": "MIT",
   "devDependencies": {
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "vite": "^8.3.5"
   },
   "dependencies": {
