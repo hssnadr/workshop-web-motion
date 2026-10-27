@@ -32,8 +32,6 @@ canvas {
 
 /* 3. Page : une colonne de la hauteur de l'écran, sans défilement, en deux blocs (titre et boutons, puis scènes) */
 body {
-    padding-bottom: 100vh;
-    padding-bottom: 100svh; /* étape 3.2 seulement : de quoi faire sortir les scènes de l'écran au scroll (visibilité) */
     background-color: var(--black);
     color: var(--white);
     font-family: var(--font);
