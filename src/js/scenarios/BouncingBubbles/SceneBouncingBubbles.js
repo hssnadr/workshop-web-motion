@@ -23,23 +23,20 @@ class Bubble {
 
     /**
      * modèle d'état : dx = v·dt (px/s × s = px)
-     * gravité, modèle simplifié : une vitesse (px/s) ajoutée à celle de la bulle ; annulée au bord, sinon elle la pousserait hors du cadre
+     * gravité, modèle simplifié : une vitesse (px/s) ajoutée à celle de la bulle ; annulée aux bords gauche et droit, sinon elle la pousserait hors du cadre
+     * bords haut et bas ouverts : la bulle sort, et main.js la fait entrer dans une autre scène
      */
-    update(width, height, gravity) {
+    update(width, gravity) {
         const dt_ = this.time.delta / 1000 // ms → s
         const isOnBorderX_ = this.x < this.radius || this.x > width - this.radius
-        const isOnBorderY_ = this.y < this.radius || this.y > height - this.radius
         const gx_ = isOnBorderX_ ? 0 : gravity.x
-        const gy_ = isOnBorderY_ ? 0 : gravity.y
 
         this.x += (this.vx + gx_) * dt_
-        this.y += (this.vy + gy_) * dt_
+        this.y += (this.vy + gravity.y) * dt_
 
-        /** bords : la vitesse repart toujours vers l'intérieur (idempotent : appliquer la règle deux fois ne change rien) */
+        /** bords gauche et droit : la vitesse repart toujours vers l'intérieur (idempotent : appliquer la règle deux fois ne change rien) */
         if (this.x < this.radius) this.vx = Math.abs(this.vx)
         if (this.x > width - this.radius) this.vx = -Math.abs(this.vx)
-        if (this.y < this.radius) this.vy = Math.abs(this.vy)
-        if (this.y > height - this.radius) this.vy = -Math.abs(this.vy)
     }
 
     draw() {
@@ -89,7 +86,7 @@ export default class SceneBouncingBubbles extends Scene2D {
     update() {
         /** gravité : l'inclinaison calibrée, mise à l'échelle (px/s) */
         const gravity_ = { x: this.tilt.x * this.params.gravity, y: this.tilt.y * this.params.gravity }
-        this.bubbles.forEach(b => { b.update(this.width, this.height, gravity_) })
+        this.bubbles.forEach(b => { b.update(this.width, gravity_) })
 
         this.clear()
         this.draw()
@@ -115,6 +112,16 @@ export default class SceneBouncingBubbles extends Scene2D {
         /** bulles par-dessus les liens */
         this.bubbles.forEach(b => { b.draw() })
     }
+
+    /** échanges entre scènes, par des méthodes publiques : position en px (repère du canvas), vitesse en px/s */
+    addBubble(x, y, vx, vy) {
+        const bubble_ = new Bubble(this.context, x, y, this.params.radius)
+        bubble_.vx = vx
+        bubble_.vy = vy
+        this.bubbles.push(bubble_)
+    }
+
+    removeBubble(bubble) { this.bubbles = this.bubbles.filter(b => b !== bubble) }
 
     onDeviceOrientation() {
         const { beta, gamma } = this.windowContext.orientation
