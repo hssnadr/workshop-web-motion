@@ -5,7 +5,7 @@ import { Composite, Engine, Runner } from "matter-js"
 import Scene3D from "../../canvas-3d/Scene3D"
 import Cube3D from "./Cube3D"
 import Wall from "./Wall"
-import { clamp, randomRange } from "../../utils/math/MathUtils"
+import { clamp, randomRange, toRadians } from "../../utils/math/MathUtils"
 import hdriUrl from "../../../assets/hdri/studio_small_09_1k.hdr?url"
 
 const CAMERA_DISTANCE = 100 // px, la caméra regarde le plan z = 0 depuis z = 100
@@ -25,6 +25,11 @@ export default class SceneGravityCubes extends Scene3D {
         /** caméra orthographique : pas de perspective, son cadre (left, right, top, bottom) est réglé au resize */
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2 * CAMERA_DISTANCE)
         this.camera.position.z = CAMERA_DISTANCE
+
+        /** world : ce qui est attaché à l'écran (objets et caméra) ; la lumière (l'HDRI) reste fixe, attachée à la scène */
+        this.world = new THREE.Group()
+        this.scene.add(this.world)
+        this.world.add(this.camera)
 
         /** lumière : l'HDRI mesure la lumière qui arrive de chaque direction ; elle éclaire tous les matériaux de la scène */
         this.environmentMap = new HDRLoader().load(hdriUrl, () => { this.scene.environment = this.environmentMap }) // asynchrone : la scène n'est éclairée qu'une fois l'image chargée
@@ -58,6 +63,9 @@ export default class SceneGravityCubes extends Scene3D {
         this.windowContext.useDeviceAcceleration = true
         this.engine.gravity.scale *= GRAVITY_SCALE_FACTOR
 
+        /** device orientation : le world tourne avec le téléphone */
+        this.windowContext.useDeviceOrientation = true
+
         /** cubes : positions en px, tirées dans le canvas (origine au centre) */
         this.cubes = []
         for (let i = 0; i < nCubes; i++) {
@@ -67,7 +75,7 @@ export default class SceneGravityCubes extends Scene3D {
                 randomRange(-this.height / 2 + CUBE_SIZE, this.height / 2 - CUBE_SIZE)
             )
             this.cubes.push(cube_)
-            this.scene.add(cube_)
+            this.world.add(cube_)
         }
 
         /** murs à gauche et à droite ; haut et bas ouverts vers les scènes voisines */
@@ -79,9 +87,9 @@ export default class SceneGravityCubes extends Scene3D {
         /** maze */
         this.wallMaze1 = new Wall("white", CUBE_SIZE)
         this.wallMaze2 = new Wall("white", CUBE_SIZE)
-        this.scene.add(this.wallMaze1)
-        this.scene.add(this.wallMaze2)
-        Object.values(this.walls).forEach(w => { this.scene.add(w) })
+        this.world.add(this.wallMaze1)
+        this.world.add(this.wallMaze2)
+        Object.values(this.walls).forEach(w => { this.world.add(w) })
 
         /** le monde physique : les mêmes objets, côté Matter.js */
         Composite.add(this.engine.world, [...this.cubes, ...Object.values(this.walls), this.wallMaze1, this.wallMaze2].map(o => o.body))
@@ -108,7 +116,7 @@ export default class SceneGravityCubes extends Scene3D {
         const cube_ = new Cube3D(CUBE_SIZE, this.cubeGeometry, this.materials[Math.floor(this.materials.length * Math.random())])
         cube_.setPosition(x, y)
         this.cubes.push(cube_)
-        this.scene.add(cube_)
+        this.world.add(cube_)
         Composite.add(this.engine.world, cube_.body)
     }
 
@@ -134,6 +142,15 @@ export default class SceneGravityCubes extends Scene3D {
         const gravity_ = { x: -x / STANDARD_GRAVITY, y: y / STANDARD_GRAVITY } // → repère de Matter.js (y vers le bas) : le signe de y change une seconde fois
         this.engine.gravity.x = gravity_.x
         this.engine.gravity.y = gravity_.y
+    }
+
+    /**
+     * le world tourne comme le téléphone : vue depuis l'écran, c'est la lumière qui tourne en sens inverse (R⁻¹)
+     * même convention que le capteur : rotations dans l'ordre Z, X, Y ; alpha (boussole) ignoré, faute de référence fiable
+     */
+    onDeviceOrientation() {
+        const { beta, gamma } = this.windowContext.orientation
+        this.world.rotation.set(toRadians(beta), toRadians(gamma), 0, 'ZXY')
     }
 
     resize() {

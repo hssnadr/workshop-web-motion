@@ -10,3 +10,6 @@ export const distance2d = (x1, y1, x2, y2) => {
 
 /** borner : ramène value dans [min, max] (saturation) */
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+
+/** proportionnalité : 180° = π rad */
+export const toRadians = (angle) => angle * Math.PI / 180
