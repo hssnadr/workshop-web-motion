@@ -1,36 +1,12 @@
 import * as THREE from "three"
+import { Engine, Runner } from "matter-js"
 import Scene3D from "../../canvas-3d/Scene3D"
+import Cube3D from "./Cube3D"
+import Wall from "./Wall"
 
 const CAMERA_DISTANCE = 100 // px, la caméra regarde le plan z = 0 depuis z = 100
 const CUBE_SIZE = 20 // px, longueur d'une arête
 const WALL_THICKNESS = 15 // px
-
-class Cube3D extends THREE.Mesh {
-    constructor(size, color) {
-        super(new THREE.BoxGeometry(size, size, size), new THREE.MeshBasicMaterial({ color }))
-        this.size = size // px
-    }
-
-    dispose() {
-        this.geometry.dispose()
-        this.material.dispose()
-    }
-}
-
-class Wall extends THREE.Mesh {
-    constructor(color, depth) {
-        /** géométrie unité (1 × 1 × 1 px), mise à la taille voulue par homothétie (scale) */
-        super(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color }))
-        this.depth = depth // px
-    }
-
-    setSize(width, height) { this.scale.set(width, height, this.depth) }
-
-    dispose() {
-        this.geometry.dispose()
-        this.material.dispose()
-    }
-}
 
 export default class SceneGravityCubes extends Scene3D {
     constructor(id = "canvas-scene") {
@@ -39,6 +15,11 @@ export default class SceneGravityCubes extends Scene3D {
         /** caméra orthographique : pas de perspective, son cadre (left, right, top, bottom) est réglé au resize */
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2 * CAMERA_DISTANCE)
         this.camera.position.z = CAMERA_DISTANCE
+
+        /** physics : le moteur et sa propre boucle (Runner), qui le fait avancer à chaque image */
+        this.engine = Engine.create()
+        this.runner = Runner.create()
+        Runner.run(this.runner, this.engine)
 
         /** un cube, au centre de la scène */
         this.cube = new Cube3D(CUBE_SIZE, "red")
@@ -89,5 +70,7 @@ export default class SceneGravityCubes extends Scene3D {
         super.destroy()
         this.cube.dispose()
         Object.values(this.walls).forEach(w => { w.dispose() })
+        Runner.stop(this.runner) // sinon la boucle du moteur continue après destroy
+        Engine.clear(this.engine)
     }
 }
