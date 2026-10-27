@@ -61,6 +61,7 @@ export default class Scene3D extends THREE.Scene {
 
     /** hooks : entrées diffusées par le WindowContext */
     onDeviceOrientation() {}
+    onDeviceAcceleration() {}
 
     destroy() {
         /** mémoire GPU de tout ce que la scène contient : géométries, matériaux et leurs textures */

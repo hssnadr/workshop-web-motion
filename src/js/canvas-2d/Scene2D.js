@@ -51,6 +51,7 @@ export default class Scene2D {
 
     /** hooks : entrées diffusées par le WindowContext */
     onDeviceOrientation() {}
+    onDeviceAcceleration() {}
 
     destroy() {
         this.clear()
