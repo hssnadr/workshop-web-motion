@@ -32,19 +32,17 @@ export default class SceneGravityCubes extends Scene3D {
         for (let i = 0; i < nCubes; i++) {
             const cube_ = new Cube3D(CUBE_SIZE, CUBE_COLORS[i % CUBE_COLORS.length])
             cube_.setPosition(
-                randomRange(-this.width / 2 + WALL_THICKNESS + CUBE_SIZE, this.width / 2 - WALL_THICKNESS - CUBE_SIZE),
-                randomRange(-this.height / 2 + WALL_THICKNESS + CUBE_SIZE, this.height / 2 - WALL_THICKNESS - CUBE_SIZE)
+                randomRange(-this.width / 2 + CUBE_SIZE, this.width / 2 - CUBE_SIZE),
+                randomRange(-this.height / 2 + CUBE_SIZE, this.height / 2 - CUBE_SIZE)
             )
             this.cubes.push(cube_)
             this.scene.add(cube_)
         }
 
-        /** murs, le long des bords du canvas */
+        /** murs à gauche et à droite ; haut et bas ouverts vers les scènes voisines */
         this.walls = {
             left: new Wall("blue", CUBE_SIZE),
-            right: new Wall("blue", CUBE_SIZE),
-            top: new Wall("red", CUBE_SIZE),
-            bottom: new Wall("yellow", CUBE_SIZE)
+            right: new Wall("blue", CUBE_SIZE)
         }
         Object.values(this.walls).forEach(w => { this.scene.add(w) })
 
@@ -58,6 +56,28 @@ export default class SceneGravityCubes extends Scene3D {
     update() {
         this.cubes.forEach(c => { c.update() })
         this.render()
+    }
+
+
+    /** échanges entre scènes, par des méthodes publiques, comme les scènes 2D : position en px, repère de la scène */
+    addBubble(x, y) {
+        const cube_ = new Cube3D(CUBE_SIZE, CUBE_COLORS[Math.floor(CUBE_COLORS.length * Math.random())])
+        cube_.setPosition(x, y)
+        this.cubes.push(cube_)
+        this.scene.add(cube_)
+        Composite.add(this.engine.world, cube_.body)
+    }
+
+    removeBubble(cube) {
+        /** three.js */
+        cube.dispose()
+        cube.removeFromParent()
+
+        /** Matter.js */
+        Composite.remove(this.engine.world, cube.body)
+
+        /** liste */
+        this.cubes = this.cubes.filter(c => c !== cube)
     }
 
     onDeviceAcceleration() {
@@ -83,21 +103,16 @@ export default class SceneGravityCubes extends Scene3D {
         this.camera.bottom = -this.height / 2
         this.camera.updateProjectionMatrix() // sans elle, la caméra garde son ancien cadre
 
-        /** murs : à l'intérieur du canvas, collés à ses bords */
-        const { left, right, top, bottom } = this.walls
-        left.setSize(WALL_THICKNESS, this.height)
-        left.setPosition(-this.width / 2 + WALL_THICKNESS / 2, 0)
-        right.setSize(WALL_THICKNESS, this.height)
-        right.setPosition(this.width / 2 - WALL_THICKNESS / 2, 0)
-        top.setSize(this.width - 2 * WALL_THICKNESS, WALL_THICKNESS)
-        top.setPosition(0, this.height / 2 - WALL_THICKNESS / 2)
-        bottom.setSize(this.width - 2 * WALL_THICKNESS, WALL_THICKNESS)
-        bottom.setPosition(0, -this.height / 2 + WALL_THICKNESS / 2)
+        /** murs : juste à l'extérieur des bords gauche et droit, deux fois plus hauts que le canvas */
+        const { left, right } = this.walls
+        left.setSize(WALL_THICKNESS, 2 * this.height)
+        left.setPosition(-this.width / 2 - WALL_THICKNESS / 2, 0)
+        right.setSize(WALL_THICKNESS, 2 * this.height)
+        right.setPosition(this.width / 2 + WALL_THICKNESS / 2, 0)
 
         /** cubes restés hors du cadre (canvas rétréci) : ramenés entre les murs, sinon ils tomberaient hors du monde */
-        const limitX_ = this.width / 2 - WALL_THICKNESS - CUBE_SIZE // px
-        const limitY_ = this.height / 2 - WALL_THICKNESS - CUBE_SIZE // px
-        this.cubes.forEach(c => { c.setPosition(clamp(c.position.x, -limitX_, limitX_), clamp(c.position.y, -limitY_, limitY_)) })
+        const limitX_ = this.width / 2 - CUBE_SIZE // px
+        this.cubes.forEach(c => { c.setPosition(clamp(c.position.x, -limitX_, limitX_), c.position.y) })
 
         this.render()
     }

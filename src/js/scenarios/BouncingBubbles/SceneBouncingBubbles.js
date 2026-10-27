@@ -113,11 +113,11 @@ export default class SceneBouncingBubbles extends Scene2D {
         this.bubbles.forEach(b => { b.draw() })
     }
 
-    /** échanges entre scènes, par des méthodes publiques : position en px (repère du canvas), vitesse en px/s */
-    addBubble(x, y, vx, vy) {
+    /** échanges entre scènes, par des méthodes publiques : position en px (repère du canvas), vitesse en px/s (gardée au hasard si elle n'est pas donnée) */
+    addBubble(x, y, vx = null, vy = null) {
         const bubble_ = new Bubble(this.context, x, y, this.params.radius)
-        bubble_.vx = vx
-        bubble_.vy = vy
+        bubble_.vx = vx ?? bubble_.vx
+        bubble_.vy = vy ?? bubble_.vy
         this.bubbles.push(bubble_)
     }
 
