@@ -18,12 +18,14 @@ export default class Scene2D {
         this.domElement = new DomElement(id)
         this.canvas = this.domElement.element
         this.context = this.canvas.getContext('2d')
+        if (this.debug.isActive) this.debugFolder.add(this.domElement, 'isVisible').listen().disable()
 
         /** pas de resize ici : le scénario l'appelle, une fois son propre état prêt */
     }
 
     get width() { return this.domElement.width }
     get height() { return this.domElement.height }
+    get isVisible() { return this.domElement.isVisible }
 
     clear() { this.context.clearRect(0, 0, this.width, this.height) }
 
@@ -43,6 +45,9 @@ export default class Scene2D {
         /** changer la taille du bitmap l'efface : on redessine */
         this.draw()
     }
+
+    /** au scroll, seule la position dans la fenêtre change */
+    scroll() { this.domElement.measure() }
 
     /** contenu : défini par chaque scénario */
     draw() {}
