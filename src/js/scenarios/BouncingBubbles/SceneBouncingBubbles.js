@@ -2,10 +2,7 @@ import Scene2D from "../../canvas-2d/Scene2D"
 import { circle, line } from "../../canvas-2d/Shapes2D"
 import { distance2d, randomRange } from "../../utils/math/MathUtils"
 
-const BUBBLE_RADIUS = 10 // px
-const LINE_WIDTH = 2 // px
 const MAX_SPEED = 1 // px/image
-const LINK_DISTANCE = 50 // px
 
 class Bubble {
     constructor(context, x, y, radius) {
@@ -40,16 +37,32 @@ export default class SceneBouncingBubbles extends Scene2D {
     constructor(nBubbles, id = "canvas-scene") {
         super(id)
 
-        /** bubbles : conditions initiales tirées uniformément dans le canvas, à un rayon des bords */
-        this.bubbles = []
-        for (let i = 0; i < nBubbles; i++) {
-            const x_ = randomRange(BUBBLE_RADIUS, this.width - BUBBLE_RADIUS)
-            const y_ = randomRange(BUBBLE_RADIUS, this.height - BUBBLE_RADIUS)
-            this.bubbles.push(new Bubble(this.context, x_, y_, BUBBLE_RADIUS))
+        /** params */
+        this.params.nBubbles = nBubbles
+        this.params.radius = 10 // px
+        this.params.linkDistance = 50 // px
+        this.params.lineWidth = 2 // px
+        if (this.debug.isActive) {
+            this.debugFolder.add(this.params, 'nBubbles', 0, 50, 1).onFinishChange(() => { this.generateBubbles() })
+            this.debugFolder.add(this.params, 'radius', 1, 30).onChange(() => { this.bubbles.forEach(b => { b.radius = this.params.radius }) })
+            this.debugFolder.add(this.params, 'linkDistance', 0, 300)
+            this.debugFolder.add(this.params, 'lineWidth', 1, 10)
         }
 
         /** init */
+        this.generateBubbles()
         this.resize()
+    }
+
+    /** bubbles : conditions initiales tirées uniformément dans le canvas, à un rayon des bords */
+    generateBubbles() {
+        const radius_ = this.params.radius
+        this.bubbles = []
+        for (let i = 0; i < this.params.nBubbles; i++) {
+            const x_ = randomRange(radius_, this.width - radius_)
+            const y_ = randomRange(radius_, this.height - radius_)
+            this.bubbles.push(new Bubble(this.context, x_, y_, radius_))
+        }
     }
 
     /** état → règle d'évolution → observation */
@@ -64,7 +77,7 @@ export default class SceneBouncingBubbles extends Scene2D {
         /** style */
         this.context.strokeStyle = "white"
         this.context.fillStyle = "black"
-        this.context.lineWidth = LINE_WIDTH
+        this.context.lineWidth = this.params.lineWidth
         this.context.lineCap = "round"
 
         /** liens : chaque paire une seule fois (i < j), soit n(n − 1) / 2 paires → coût en n² */
@@ -72,7 +85,7 @@ export default class SceneBouncingBubbles extends Scene2D {
             const current_ = this.bubbles[i]
             for (let j = i + 1; j < this.bubbles.length; j++) {
                 const next_ = this.bubbles[j]
-                if (distance2d(current_.x, current_.y, next_.x, next_.y) < LINK_DISTANCE)
+                if (distance2d(current_.x, current_.y, next_.x, next_.y) < this.params.linkDistance)
                     line(this.context, current_.x, current_.y, next_.x, next_.y)
             }
         }
