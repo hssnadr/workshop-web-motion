@@ -30,6 +30,7 @@ export default class WindowContext {
 
     /** culling : seules les scènes visibles font un pas */
     update() { this.scenes.forEach(s => { if (s.domElement.isVisible) s.update() }) }
+
     resize() { this.scenes.forEach(s => { s.resize() }) }
     scroll() { this.scenes.forEach(s => { s.scroll() }) }
 
