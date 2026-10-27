@@ -23,6 +23,9 @@ export default class SceneGravityCubes extends Scene3D {
         this.runner = Runner.create()
         Runner.run(this.runner, this.engine)
 
+        /** device motion : l'inclinaison oriente la gravité du moteur */
+        this.windowContext.useDeviceOrientation = true
+
         /** cubes : positions en px, tirées dans le canvas (origine au centre) */
         this.cubes = []
         for (let i = 0; i < nCubes; i++) {
@@ -54,6 +57,15 @@ export default class SceneGravityCubes extends Scene3D {
     update() {
         this.cubes.forEach(c => { c.update() })
         this.render()
+    }
+
+    onDeviceOrientation() {
+        const { beta, gamma } = this.windowContext.orientation
+
+        /** direction de la pente : angle polaire du vecteur (gamma, beta), puis vecteur unitaire (cos, sin) — sa norme vaut toujours 1 */
+        const angle_ = Math.atan2(beta, gamma) // rad
+        this.engine.gravity.x = Math.cos(angle_)
+        this.engine.gravity.y = Math.sin(angle_) // y de Matter.js vers le bas, comme beta > 0 (haut de l'appareil relevé)
     }
 
     resize() {
