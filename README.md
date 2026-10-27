@@ -6,3 +6,5 @@ Site construit pas à pas pendant le cours. Chaque commit de `main` est une éta
 npm install
 npm run dev
 ```
+
+Réglages : ajouter `#debug` à la fin de l'URL.

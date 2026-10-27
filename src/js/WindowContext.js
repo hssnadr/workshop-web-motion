@@ -1,3 +1,4 @@
+import Debug from "./utils/Debug"
 import Time from "./utils/Time"
 
 /** singleton : l'instance unique, partagée par toutes les scènes */
@@ -19,6 +20,9 @@ export default class WindowContext {
         /** time : une seule boucle pour toute la page */
         this.time = new Time()
         this.time.on('update', () => { this.update() })
+
+        /** debug */
+        this.debug = new Debug()
     }
 
     addScene(scene) { this.scenes.push(scene) }

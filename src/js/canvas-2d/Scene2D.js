@@ -9,6 +9,11 @@ export default class Scene2D {
         this.windowContext = new WindowContext()
         this.windowContext.addScene(this)
 
+        /** debug : params = seule source de vérité des réglages, un dossier par scène */
+        this.params = {}
+        this.debug = this.windowContext.debug
+        if (this.debug.isActive) this.debugFolder = this.debug.ui.addFolder(id)
+
         /** canvas + context 2d */
         this.domElement = new DomElement(id)
         this.canvas = this.domElement.element
