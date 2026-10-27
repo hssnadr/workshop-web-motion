@@ -22,4 +22,9 @@ export default class DomElement {
         return this.bottom > 0 && this.top < window.innerHeight
             && this.right > 0 && this.left < window.innerWidth
     }
+
+    /** rapport largeur / hauteur : 1 si une dimension est nulle (canvas masqué), pour ne pas donner NaN à la caméra */
+    get aspectRatio() {
+        return this.width && this.height ? this.width / this.height : 1
+    }
 }
