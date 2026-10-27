@@ -1,10 +1,11 @@
 import Scene2D from "../../canvas-2d/Scene2D"
-import { circle } from "../../canvas-2d/Shapes2D"
-import { randomRange } from "../../utils/math/MathUtils"
+import { circle, line } from "../../canvas-2d/Shapes2D"
+import { distance2d, randomRange } from "../../utils/math/MathUtils"
 
 const BUBBLE_RADIUS = 10 // px
 const LINE_WIDTH = 2 // px
 const MAX_SPEED = 1 // px/image
+const LINK_DISTANCE = 50 // px
 
 class Bubble {
     constructor(context, x, y, radius) {
@@ -64,7 +65,19 @@ export default class SceneBouncingBubbles extends Scene2D {
         this.context.strokeStyle = "white"
         this.context.fillStyle = "black"
         this.context.lineWidth = LINE_WIDTH
+        this.context.lineCap = "round"
 
+        /** liens : chaque paire une seule fois (i < j), soit n(n − 1) / 2 paires → coût en n² */
+        for (let i = 0; i < this.bubbles.length; i++) {
+            const current_ = this.bubbles[i]
+            for (let j = i + 1; j < this.bubbles.length; j++) {
+                const next_ = this.bubbles[j]
+                if (distance2d(current_.x, current_.y, next_.x, next_.y) < LINK_DISTANCE)
+                    line(this.context, current_.x, current_.y, next_.x, next_.y)
+            }
+        }
+
+        /** bulles par-dessus les liens */
         this.bubbles.forEach(b => { b.draw() })
     }
 }
