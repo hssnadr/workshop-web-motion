@@ -1,5 +1,6 @@
 import Debug from "./utils/Debug"
 import Time from "./utils/Time"
+import DeviceAcceleration from "./utils/device/DeviceAcceleration"
 import DeviceOrientation from "./utils/device/DeviceOrientation"
 
 /** singleton : l'instance unique, partagée par toutes les scènes */
@@ -57,6 +58,21 @@ export default class WindowContext {
     /** même schéma que resize : une mesure, répercutée à toutes les scènes */
     deviceOrientation() { this.scenes.forEach(s => { s.onDeviceOrientation() }) }
 
+    set useDeviceAcceleration(isActive) {
+        if (isActive && !this.acceleration) {
+            this.acceleration = new DeviceAcceleration()
+            this.handleAcceleration = () => { this.deviceAcceleration() }
+            this.acceleration.on('reading', this.handleAcceleration)
+        }
+        if (!isActive && this.acceleration) {
+            this.acceleration.off('reading', this.handleAcceleration)
+            this.acceleration.destroy()
+            this.acceleration = null
+        }
+    }
+
+    deviceAcceleration() { this.scenes.forEach(s => { s.onDeviceAcceleration() }) }
+
     /**
      * DESTROY : défaire tout ce que le constructeur a fait, dans l'ordre inverse
      * (removeEventListener avec une nouvelle flèche ne retirerait rien : ce n'est pas la même fonction)
@@ -65,6 +81,7 @@ export default class WindowContext {
         this.scenes.forEach(s => { s.destroy() }) // inscrites en dernier, détruites en premier
         this.scenes = []
         this.useDeviceOrientation = false
+        this.useDeviceAcceleration = false
         this.debug.destroy()
         this.time.off('update', this.handleUpdate)
         this.time.destroy()

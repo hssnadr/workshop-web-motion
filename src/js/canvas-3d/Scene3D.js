@@ -65,6 +65,7 @@ export default class Scene3D {
 
     /** hooks : entrées diffusées par le WindowContext */
     onDeviceOrientation() {}
+    onDeviceAcceleration() {}
 
     destroy() {
         this.renderer.dispose()

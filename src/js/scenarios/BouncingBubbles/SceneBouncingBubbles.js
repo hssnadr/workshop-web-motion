@@ -122,6 +122,5 @@ export default class SceneBouncingBubbles extends Scene2D {
         /** calibrer : angle ramené à [−1, 1] (÷ 90°), puis saturé au-delà (clamp) ; gamma penche à gauche / droite, beta vers l'avant / l'arrière */
         this.tilt.x = clamp(gamma / MAX_TILT, -1, 1)
         this.tilt.y = clamp(beta / MAX_TILT, -1, 1)
-        this.debug.domDebug = `inclinaison x ${this.tilt.x.toFixed(2)} · y ${this.tilt.y.toFixed(2)}`
     }
 }
