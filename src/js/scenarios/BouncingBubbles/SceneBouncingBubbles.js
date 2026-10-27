@@ -19,9 +19,15 @@ class Bubble {
     }
 
     /** modèle d'état : position au pas n + 1 = position au pas n + vitesse */
-    update() {
+    update(width, height) {
         this.x += this.vx
         this.y += this.vy
+
+        /** bords : la vitesse repart toujours vers l'intérieur (idempotent : appliquer la règle deux fois ne change rien) */
+        if (this.x < this.radius) this.vx = Math.abs(this.vx)
+        if (this.x > width - this.radius) this.vx = -Math.abs(this.vx)
+        if (this.y < this.radius) this.vy = Math.abs(this.vy)
+        if (this.y > height - this.radius) this.vy = -Math.abs(this.vy)
     }
 
     draw() {
@@ -47,7 +53,7 @@ export default class SceneBouncingBubbles extends Scene2D {
 
     /** état → règle d'évolution → observation */
     update() {
-        this.bubbles.forEach(b => { b.update() })
+        this.bubbles.forEach(b => { b.update(this.width, this.height) })
 
         this.clear()
         this.draw()
