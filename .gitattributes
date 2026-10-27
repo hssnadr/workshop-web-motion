@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# assets binaires : jamais de normalisation des fins de ligne
+*.hdr binary

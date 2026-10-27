@@ -1,9 +1,11 @@
 import * as THREE from "three"
+import { HDRLoader } from "three/addons/loaders/HDRLoader.js"
 import { Composite, Engine, Runner } from "matter-js"
 import Scene3D from "../../canvas-3d/Scene3D"
 import Cube3D from "./Cube3D"
 import Wall from "./Wall"
 import { clamp, randomRange } from "../../utils/math/MathUtils"
+import hdriUrl from "../../../assets/hdri/studio_small_09_1k.hdr?url"
 
 const CAMERA_DISTANCE = 100 // px, la caméra regarde le plan z = 0 depuis z = 100
 const CUBE_SIZE = 20 // px, longueur d'une arête
@@ -21,6 +23,10 @@ export default class SceneGravityCubes extends Scene3D {
         /** caméra orthographique : pas de perspective, son cadre (left, right, top, bottom) est réglé au resize */
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2 * CAMERA_DISTANCE)
         this.camera.position.z = CAMERA_DISTANCE
+
+        /** lumière : l'HDRI mesure la lumière qui arrive de chaque direction ; elle éclaire tous les matériaux de la scène */
+        this.environmentMap = new HDRLoader().load(hdriUrl, () => { this.scene.environment = this.environmentMap }) // asynchrone : la scène n'est éclairée qu'une fois l'image chargée
+        this.environmentMap.mapping = THREE.EquirectangularReflectionMapping // rectangle (longitude, latitude) → sphère des directions
 
         /** physics : le moteur et sa propre boucle (Runner), qui le fait avancer à chaque image */
         this.engine = Engine.create()
@@ -144,6 +150,7 @@ export default class SceneGravityCubes extends Scene3D {
         Object.values(this.walls).forEach(w => { w.dispose() })
         this.wallMaze1.dispose()
         this.wallMaze2.dispose()
+        this.environmentMap.dispose()
         Composite.clear(this.engine.world)
         Runner.stop(this.runner) // sinon la boucle du moteur continue après destroy
         Engine.clear(this.engine)

@@ -4,7 +4,7 @@ import { Bodies, Body } from "matter-js"
 /** three.js (y vers le haut) ↔ Matter.js (y vers le bas) : symétrie y → −y, qui est sa propre inverse */
 export default class Cube3D extends THREE.Mesh {
     constructor(size, color) {
-        super(new THREE.BoxGeometry(size, size, size), new THREE.MeshBasicMaterial({ color }))
+        super(new THREE.BoxGeometry(size, size, size), new THREE.MeshStandardMaterial({ color }))
         this.size = size // px
 
         /** corps physique : le même carré, côté Matter.js */
