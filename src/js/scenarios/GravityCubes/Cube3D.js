@@ -3,9 +3,9 @@ import { Bodies, Body } from "matter-js"
 
 /** three.js (y vers le haut) ↔ Matter.js (y vers le bas) : symétrie y → −y, qui est sa propre inverse */
 export default class Cube3D extends THREE.Mesh {
-    /** le matériau est partagé : il appartient à la scène, qui le détruit */
-    constructor(size, material) {
-        super(new THREE.BoxGeometry(size, size, size), material)
+    /** géométrie et matériau sont partagés : ils appartiennent à la scène, qui les détruit */
+    constructor(size, geometry, material) {
+        super(geometry, material)
         this.size = size // px
 
         /** corps physique : le même carré, côté Matter.js */
@@ -25,6 +25,4 @@ export default class Cube3D extends THREE.Mesh {
         this.position.y = -this.body.position.y
         this.rotation.z = -this.body.angle
     }
-
-    dispose() { this.geometry.dispose() }
 }
