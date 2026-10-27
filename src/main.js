@@ -7,5 +7,5 @@ document.getElementById("btn-access").addEventListener("click", () => { askMotio
 
 /** scenes */
 const scene1 = new SceneBouncingBubbles(10, "canvas-scene")
-const scene3d = new SceneGravityCubes("canvas-scene-3d")
+const scene3d = new SceneGravityCubes(9, "canvas-scene-3d")
 const scene2 = new SceneBouncingBubbles(10, "canvas-scene-2")
