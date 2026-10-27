@@ -9,6 +9,7 @@ const CAMERA_DISTANCE = 100 // px, la caméra regarde le plan z = 0 depuis z = 1
 const CUBE_SIZE = 20 // px, longueur d'une arête
 const CUBE_COLORS = ["red", "yellow", "blue"]
 const WALL_THICKNESS = 15 // px
+const STANDARD_GRAVITY = 9.81 // m/s²
 
 export default class SceneGravityCubes extends Scene3D {
     constructor(nCubes, id = "canvas-scene") {
@@ -23,8 +24,8 @@ export default class SceneGravityCubes extends Scene3D {
         this.runner = Runner.create()
         Runner.run(this.runner, this.engine)
 
-        /** device motion : l'inclinaison oriente la gravité du moteur */
-        this.windowContext.useDeviceOrientation = true
+        /** device motion : l'accéléromètre donne la gravité du moteur (direction et norme) */
+        this.windowContext.useDeviceAcceleration = true
 
         /** cubes : positions en px, tirées dans le canvas (origine au centre) */
         this.cubes = []
@@ -59,13 +60,17 @@ export default class SceneGravityCubes extends Scene3D {
         this.render()
     }
 
-    onDeviceOrientation() {
-        const { beta, gamma } = this.windowContext.orientation
+    onDeviceAcceleration() {
+        const { x, y } = this.windowContext.acceleration
+        this.debug.domDebug = `accélération x ${x.toFixed(2)} · y ${y.toFixed(2)} m/s²`
 
-        /** direction de la pente : angle polaire du vecteur (gamma, beta), puis vecteur unitaire (cos, sin) — sa norme vaut toujours 1 */
-        const angle_ = Math.atan2(beta, gamma) // rad
-        this.engine.gravity.x = Math.cos(angle_)
-        this.engine.gravity.y = Math.sin(angle_) // y de Matter.js vers le bas, comme beta > 0 (haut de l'appareil relevé)
+        /**
+         * l'accéléromètre mesure la réaction du support, opposée à la gravité : g = −a (repère de l'appareil, y vers le haut)
+         * normalisée par g terrestre : 1 = toute la gravité dans le plan de l'écran (appareil debout), 0 = appareil à plat
+         */
+        const gravity_ = { x: -x / STANDARD_GRAVITY, y: y / STANDARD_GRAVITY } // → repère de Matter.js (y vers le bas) : le signe de y change une seconde fois
+        this.engine.gravity.x = gravity_.x
+        this.engine.gravity.y = gravity_.y
     }
 
     resize() {
