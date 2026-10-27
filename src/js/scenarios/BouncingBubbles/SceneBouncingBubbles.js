@@ -19,13 +19,26 @@ class Bubble {
         /** vitesse : un déplacement par seconde, indépendant de la fréquence de l'écran */
         this.vx = randomRange(-MAX_SPEED, MAX_SPEED) // px/s
         this.vy = randomRange(-MAX_SPEED, MAX_SPEED) // px/s
+
+        /** fausse gravité : une vitesse (px/s) ajoutée à celle de la bulle, fixée par la scène à chaque mesure d'orientation */
+        this.driftX = 0 // px/s
+        this.driftY = 0 // px/s
     }
 
-    /** modèle d'état : dx = v·dt (px/s × s = px) */
+    /**
+     * modèle d'état : dx = v·dt (px/s × s = px)
+     * fausse gravité (dérive), modèle simplifié : annulée au bord, sinon elle pousserait la bulle hors du cadre
+     */
     update(width, height) {
         const dt_ = this.time.delta / 1000 // ms → s
-        this.x += this.vx * dt_
-        this.y += this.vy * dt_
+
+        const isOnBorderX_ = this.x < this.radius || this.x > width - this.radius
+        const isOnBorderY_ = this.y < this.radius || this.y > height - this.radius
+        const driftX_ = isOnBorderX_ ? 0 : this.driftX
+        const driftY_ = isOnBorderY_ ? 0 : this.driftY
+
+        this.x += (this.vx + driftX_) * dt_
+        this.y += (this.vy + driftY_) * dt_
 
         /** bords : la vitesse repart toujours vers l'intérieur (idempotent : appliquer la règle deux fois ne change rien) */
         if (this.x < this.radius) this.vx = Math.abs(this.vx)
@@ -48,11 +61,13 @@ export default class SceneBouncingBubbles extends Scene2D {
         this.params.radius = 10 // px
         this.params.linkDistance = 50 // px
         this.params.lineWidth = 2 // px
+        this.params.gStrength = 300 // px/s, à inclinaison maximale
         if (this.debug.isActive) {
             this.debugFolder.add(this.params, 'nBubbles', 0, 50, 1).onFinishChange(() => { this.generateBubbles() })
             this.debugFolder.add(this.params, 'radius', 1, 30).onChange(() => { this.bubbles.forEach(b => { b.radius = this.params.radius }) })
             this.debugFolder.add(this.params, 'linkDistance', 0, 300)
             this.debugFolder.add(this.params, 'lineWidth', 1, 10)
+            this.debugFolder.add(this.params, 'gStrength', 0, 500)
         }
 
         /** device motion */
@@ -111,5 +126,11 @@ export default class SceneBouncingBubbles extends Scene2D {
         const gx_ = clamp(gamma / MAX_TILT, -1, 1)
         const gy_ = clamp(beta / MAX_TILT, -1, 1)
         this.debug.domDebug = `inclinaison x ${gx_.toFixed(2)} · y ${gy_.toFixed(2)}`
+
+        /** fausse gravité : l'inclinaison calibrée, mise à l'échelle (px/s), devient la dérive de chaque bulle */
+        this.bubbles.forEach(b => {
+            b.driftX = gx_ * this.params.gStrength
+            b.driftY = gy_ * this.params.gStrength
+        })
     }
 }
