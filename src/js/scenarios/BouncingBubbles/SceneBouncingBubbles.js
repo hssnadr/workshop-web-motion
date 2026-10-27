@@ -27,24 +27,26 @@ class Bubble {
 
     /**
      * modèle d'état : dx = v·dt (px/s × s = px)
-     * fausse gravité (dérive), modèle simplifié : annulée au bord, sinon elle pousserait la bulle hors du cadre
+     * fausse gravité (dérive) : annulée aux bords gauche et droit, sinon elle pousserait la bulle hors du cadre
+     * bords haut et bas ouverts : la bulle sort, et main.js la fait entrer dans une autre scène
      */
     update(width, height) {
         const dt_ = this.time.delta / 1000 // ms → s
 
         const isOnBorderX_ = this.x < this.radius || this.x > width - this.radius
-        const isOnBorderY_ = this.y < this.radius || this.y > height - this.radius
+        // const isOnBorderY_ = this.y < this.radius || this.y > height - this.radius // bords haut et bas fermés
         const driftX_ = isOnBorderX_ ? 0 : this.driftX
-        const driftY_ = isOnBorderY_ ? 0 : this.driftY
+        const driftY_ = this.driftY // bords haut et bas ouverts : la dérive n'est pas annulée
+        // const driftY_ = isOnBorderY_ ? 0 : this.driftY
 
         this.x += (this.vx + driftX_) * dt_
         this.y += (this.vy + driftY_) * dt_
 
-        /** bords : la vitesse repart toujours vers l'intérieur (idempotent : appliquer la règle deux fois ne change rien) */
+        /** bords gauche et droit : la vitesse repart toujours vers l'intérieur (idempotent : appliquer la règle deux fois ne change rien) */
         if (this.x < this.radius) this.vx = Math.abs(this.vx)
         if (this.x > width - this.radius) this.vx = -Math.abs(this.vx)
-        if (this.y < this.radius) this.vy = Math.abs(this.vy)
-        if (this.y > height - this.radius) this.vy = -Math.abs(this.vy)
+        // if (this.y < this.radius) this.vy = Math.abs(this.vy)
+        // if (this.y > height - this.radius) this.vy = -Math.abs(this.vy)
     }
 
     draw() {
@@ -118,6 +120,16 @@ export default class SceneBouncingBubbles extends Scene2D {
         /** bulles par-dessus les liens */
         this.bubbles.forEach(b => { b.draw() })
     }
+
+    /** échanges entre scènes, par des méthodes publiques : position en px (repère du canvas), vitesse en px/s */
+    addBubble(x, y, vx, vy) {
+        const bubble_ = new Bubble(this.context, x, y, this.params.radius)
+        bubble_.vx = vx
+        bubble_.vy = vy
+        this.bubbles.push(bubble_)
+    }
+
+    removeBubble(bubble) { this.bubbles = this.bubbles.filter(b => b !== bubble) }
 
     onDeviceOrientation() {
         const { beta, gamma } = this.orientation
