@@ -1,6 +1,9 @@
 import * as THREE from "three"
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js"
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js"
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js"
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js"
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Composite, Engine, Runner } from "matter-js"
 import Scene3D from "../../canvas-3d/Scene3D"
 import Cube3D from "./Cube3D"
@@ -53,6 +56,23 @@ export default class SceneGravityCubes extends Scene3D {
 
         /** geometry : un cube aux arêtes arrondies, partagé par tous les cubes */
         this.cubeGeometry = new RoundedBoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE, CUBE_SEGMENTS, this.params.cubeRadius)
+
+        /** params : bloom */
+        this.params.bloomStrength = 0.5
+        this.params.bloomRadius = 0.4 // [0, 1]
+        this.params.bloomThreshold = 1 // intensité au-delà de laquelle un pixel diffuse : seuls les reflets les plus forts
+        if (this.debug.isActive) {
+            this.debugFolder.add(this.params, 'bloomStrength', 0, 3).onChange(() => { this.bloomPass.strength = this.params.bloomStrength })
+            this.debugFolder.add(this.params, 'bloomRadius', 0, 1).onChange(() => { this.bloomPass.radius = this.params.bloomRadius })
+            this.debugFolder.add(this.params, 'bloomThreshold', 0, 2).onChange(() => { this.bloomPass.threshold = this.params.bloomThreshold })
+        }
+
+        /** post-processing : l'image rendue passe par une chaîne d'effets, chacun reçoit l'image du précédent */
+        const { bloomStrength, bloomRadius, bloomThreshold } = this.params
+        this.composer = new EffectComposer(this.renderer)
+        this.composer.addPass(new RenderPass(this.scene, this.camera))
+        this.bloomPass = new UnrealBloomPass(new THREE.Vector2(), bloomStrength, bloomRadius, bloomThreshold) // taille réglée au resize
+        this.composer.addPass(this.bloomPass)
 
         /** physics : le moteur et sa propre boucle (Runner), qui le fait avancer à chaque image */
         this.engine = Engine.create()
@@ -110,6 +130,9 @@ export default class SceneGravityCubes extends Scene3D {
         this.render()
     }
 
+    /** la chaîne d'effets remplace le rendu direct */
+    render() { this.composer.render() }
+
 
     /** échanges entre scènes, par des méthodes publiques, comme les scènes 2D : position en px, repère de la scène */
     addBubble(x, y) {
@@ -156,6 +179,10 @@ export default class SceneGravityCubes extends Scene3D {
     resize() {
         super.resize()
 
+        /** post-processing : mêmes dimensions et même densité que le renderer */
+        this.composer.setPixelRatio(this.windowContext.pixelRatio)
+        this.composer.setSize(this.width, this.height)
+
         /** référentiel : cadre de la caméra = le canvas en px → origine au centre, y vers le haut, 1 unité = 1 px */
         this.camera.left = -this.width / 2
         this.camera.right = this.width / 2
@@ -196,6 +223,8 @@ export default class SceneGravityCubes extends Scene3D {
         this.wallMaze1.dispose()
         this.wallMaze2.dispose()
         this.environmentMap.dispose()
+        this.bloomPass.dispose()
+        this.composer.dispose()
         Composite.clear(this.engine.world)
         Runner.stop(this.runner) // sinon la boucle du moteur continue après destroy
         Engine.clear(this.engine)
