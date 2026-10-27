@@ -18,6 +18,7 @@ export default class Scene2D {
         this.domElement = new DomElement(id)
         this.canvas = this.domElement.element
         this.context = this.canvas.getContext('2d')
+        if (this.debug.isActive) this.debugFolder.add(this.domElement, 'isVisible').listen().disable()
 
         /** init */
         this.resize()
@@ -41,6 +42,9 @@ export default class Scene2D {
         /** on dessine toujours en px CSS : le contexte applique la même homothétie */
         this.context.scale(pixelRatio_, pixelRatio_)
     }
+
+    /** au scroll, seule la position dans la fenêtre change */
+    scroll() { this.domElement.measure() }
 
     /** contenu : défini par chaque scénario */
     draw() {}

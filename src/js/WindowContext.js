@@ -16,6 +16,7 @@ export default class WindowContext {
 
         /** events : un seul écouteur, répercuté à toutes les scènes */
         window.addEventListener('resize', () => { this.resize() })
+        window.addEventListener('scroll', () => { this.scroll() })
 
         /** time : une seule boucle pour toute la page */
         this.time = new Time()
@@ -27,8 +28,10 @@ export default class WindowContext {
 
     addScene(scene) { this.scenes.push(scene) }
 
-    update() { this.scenes.forEach(s => { s.update() }) }
+    /** culling : seules les scènes visibles font un pas */
+    update() { this.scenes.forEach(s => { if (s.domElement.isVisible) s.update() }) }
     resize() { this.scenes.forEach(s => { s.resize() }) }
+    scroll() { this.scenes.forEach(s => { s.scroll() }) }
 
     /** nombre de pixels de l'écran par px CSS (1 sur un écran standard, 2 ou 3 sur un écran haute densité) */
     get pixelRatio() { return Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO) }
