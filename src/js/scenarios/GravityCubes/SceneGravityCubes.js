@@ -28,6 +28,20 @@ export default class SceneGravityCubes extends Scene3D {
         this.environmentMap = new HDRLoader().load(hdriUrl, () => { this.scene.environment = this.environmentMap }) // asynchrone : la scène n'est éclairée qu'une fois l'image chargée
         this.environmentMap.mapping = THREE.EquirectangularReflectionMapping // rectangle (longitude, latitude) → sphère des directions
 
+        /** params : des curseurs dans [0, 1] */
+        this.params.roughness = 0.3 // 0 = lisse (reflet net), 1 = mat (lumière diffusée)
+        this.params.metalness = 0 // 0 = plastique, 1 = métal (le reflet prend la couleur du matériau)
+        this.params.environmentIntensity = 1 // × intensité de l'HDRI
+        if (this.debug.isActive) {
+            this.debugFolder.add(this.params, 'roughness', 0, 1).onChange(() => { this.materials.forEach(m => { m.roughness = this.params.roughness }) })
+            this.debugFolder.add(this.params, 'metalness', 0, 1).onChange(() => { this.materials.forEach(m => { m.metalness = this.params.metalness }) })
+            this.debugFolder.add(this.params, 'environmentIntensity', 0, 3).onChange(() => { this.scene.environmentIntensity = this.params.environmentIntensity })
+        }
+
+        /** materials : un par couleur, partagé par les cubes de cette couleur ; un réglage s'applique à tous */
+        const { roughness, metalness } = this.params
+        this.materials = CUBE_COLORS.map(color => new THREE.MeshStandardMaterial({ color, roughness, metalness }))
+
         /** physics : le moteur et sa propre boucle (Runner), qui le fait avancer à chaque image */
         this.engine = Engine.create()
         this.runner = Runner.create()
@@ -40,7 +54,7 @@ export default class SceneGravityCubes extends Scene3D {
         /** cubes : positions en px, tirées dans le canvas (origine au centre) */
         this.cubes = []
         for (let i = 0; i < nCubes; i++) {
-            const cube_ = new Cube3D(CUBE_SIZE, CUBE_COLORS[i % CUBE_COLORS.length])
+            const cube_ = new Cube3D(CUBE_SIZE, this.materials[i % this.materials.length])
             cube_.setPosition(
                 randomRange(-this.width / 2 + CUBE_SIZE, this.width / 2 - CUBE_SIZE),
                 randomRange(-this.height / 2 + CUBE_SIZE, this.height / 2 - CUBE_SIZE)
@@ -77,7 +91,7 @@ export default class SceneGravityCubes extends Scene3D {
 
     /** échanges entre scènes, par des méthodes publiques, comme les scènes 2D : position en px, repère de la scène */
     addBubble(x, y) {
-        const cube_ = new Cube3D(CUBE_SIZE, CUBE_COLORS[Math.floor(CUBE_COLORS.length * Math.random())])
+        const cube_ = new Cube3D(CUBE_SIZE, this.materials[Math.floor(this.materials.length * Math.random())])
         cube_.setPosition(x, y)
         this.cubes.push(cube_)
         this.scene.add(cube_)
@@ -147,6 +161,7 @@ export default class SceneGravityCubes extends Scene3D {
     destroy() {
         super.destroy()
         this.cubes.forEach(c => { c.dispose() })
+        this.materials.forEach(m => { m.dispose() })
         Object.values(this.walls).forEach(w => { w.dispose() })
         this.wallMaze1.dispose()
         this.wallMaze2.dispose()
