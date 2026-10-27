@@ -10,7 +10,7 @@ export default class Time extends EventEmitter {
         this.current = performance.now() // ms
         this.delta = 0 // ms
 
-        window.requestAnimationFrame((timestamp) => { this.update(timestamp) })
+        this.requestId = window.requestAnimationFrame((timestamp) => { this.update(timestamp) })
     }
 
     update(timestamp) {
@@ -18,6 +18,9 @@ export default class Time extends EventEmitter {
         this.current = timestamp
         this.trigger('update') // un pas de simulation par image, de durée delta
 
-        window.requestAnimationFrame((timestamp) => { this.update(timestamp) })
+        this.requestId = window.requestAnimationFrame((timestamp) => { this.update(timestamp) })
     }
+
+    /** arrête la boucle : annule l'image demandée */
+    destroy() { window.cancelAnimationFrame(this.requestId) }
 }

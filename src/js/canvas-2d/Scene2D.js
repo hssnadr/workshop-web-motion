@@ -48,4 +48,9 @@ export default class Scene2D {
 
     /** contenu : défini par chaque scénario */
     draw() {}
+
+    destroy() {
+        this.clear()
+        if (this.debug.isActive) this.debugFolder.destroy()
+    }
 }
