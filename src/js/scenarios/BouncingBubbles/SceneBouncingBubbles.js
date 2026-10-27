@@ -54,6 +54,9 @@ export default class SceneBouncingBubbles extends Scene2D {
             this.debugFolder.add(this.params, 'lineWidth', 1, 10)
         }
 
+        /** device motion */
+        this.windowContext.useDeviceOrientation = true
+
         /** init */
         this.generateBubbles()
         this.resize()
@@ -97,5 +100,10 @@ export default class SceneBouncingBubbles extends Scene2D {
 
         /** bulles par-dessus les liens */
         this.bubbles.forEach(b => { b.draw() })
+    }
+
+    onDeviceOrientation() {
+        const { alpha, beta, gamma } = this.windowContext.orientation
+        this.debug.domDebug = `alpha ${alpha} · beta ${beta} · gamma ${gamma}`
     }
 }

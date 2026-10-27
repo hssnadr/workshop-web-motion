@@ -1,5 +1,6 @@
 import Debug from "./utils/Debug"
 import Time from "./utils/Time"
+import DeviceOrientation from "./utils/device/DeviceOrientation"
 
 /** singleton : l'instance unique, partagée par toutes les scènes */
 let instance = null
@@ -38,12 +39,32 @@ export default class WindowContext {
     scroll() { this.scenes.forEach(s => { s.scroll() }) }
 
     /**
+     * DEVICE MOTION : le capteur n'est créé que si une scène le demande (setter)
+     */
+    set useDeviceOrientation(isActive) {
+        if (isActive && !this.orientation) {
+            this.orientation = new DeviceOrientation()
+            this.handleOrientation = () => { this.deviceOrientation() }
+            this.orientation.on('reading', this.handleOrientation)
+        }
+        if (!isActive && this.orientation) {
+            this.orientation.off('reading', this.handleOrientation)
+            this.orientation.destroy()
+            this.orientation = null
+        }
+    }
+
+    /** même schéma que resize : une mesure, répercutée à toutes les scènes */
+    deviceOrientation() { this.scenes.forEach(s => { s.onDeviceOrientation() }) }
+
+    /**
      * DESTROY : défaire tout ce que le constructeur a fait, dans l'ordre inverse
      * (removeEventListener avec une nouvelle flèche ne retirerait rien : ce n'est pas la même fonction)
      */
     destroy() {
         this.scenes.forEach(s => { s.destroy() }) // inscrites en dernier, détruites en premier
         this.scenes = []
+        this.useDeviceOrientation = false
         this.debug.destroy()
         this.time.off('update', this.handleUpdate)
         this.time.destroy()

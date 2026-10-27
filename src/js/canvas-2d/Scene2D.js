@@ -52,6 +52,9 @@ export default class Scene2D {
     /** contenu : défini par chaque scénario */
     draw() {}
 
+    /** hooks : entrées diffusées par le WindowContext */
+    onDeviceOrientation() {}
+
     destroy() {
         this.clear()
         if (this.debug.isActive) this.debugFolder.destroy()
