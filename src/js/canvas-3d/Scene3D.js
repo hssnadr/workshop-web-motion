@@ -29,8 +29,8 @@ export default class Scene3D {
         this.camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 0.1, 2 * CAMERA_DISTANCE)
         this.camera.position.z = CAMERA_DISTANCE
 
-        /** renderer : dessine dans le canvas de la scène */
-        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true })
+        /** renderer : dessine dans le canvas de la scène ; alpha : le canvas a un canal de transparence, le fond est transparent tant que scene.background est vide (clear alpha = 0) */
+        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: true })
 
         /** pas de resize ici : le scénario l'appelle, une fois son propre état prêt */
     }
@@ -38,6 +38,9 @@ export default class Scene3D {
     get width() { return this.domElement.width }
     get height() { return this.domElement.height }
     get isVisible() { return this.domElement.isVisible }
+
+    /** densité de rendu : celle de l'écran par défaut ; un scénario peut la remplacer (réglage de qualité) */
+    get pixelRatio() { return this.windowContext.pixelRatio }
 
     /** dessine la scène vue par la caméra : à appeler après la mise à jour des objets */
     render() { this.renderer.render(this.scene, this.camera) }
@@ -53,7 +56,7 @@ export default class Scene3D {
         this.camera.updateProjectionMatrix()
 
         /** renderer : bitmap = taille affichée × densité de l'écran (false : three.js ne touche pas au CSS) */
-        this.renderer.setPixelRatio(this.windowContext.pixelRatio)
+        this.renderer.setPixelRatio(this.pixelRatio)
         this.renderer.setSize(this.width, this.height, false)
 
         /** changer la taille du bitmap l'efface : on redessine */
@@ -66,6 +69,7 @@ export default class Scene3D {
     /** hooks : entrées diffusées par le WindowContext */
     onDeviceOrientation() {}
     onDeviceAcceleration() {}
+    onSensorsAllowed() {}
 
     destroy() {
         this.renderer.dispose()

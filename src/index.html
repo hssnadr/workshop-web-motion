@@ -12,17 +12,29 @@
 <body>
     <main>
         <header>
-            <h1>Creative Web</h1>
+            <!-- <h1>Creative Web</h1>
             <div class="buttons">
                 <button id="btn-reload">Reload</button>
-                <button id="btn-access">Allow sensors</button>
-            </div>
+            </div> -->
             <p id="debug"></p>
         </header>
         <div class="scenes">
-            <canvas id="canvas-scene" class="scene"></canvas>
-            <canvas id="canvas-scene-3d" class="scene"></canvas>
-            <canvas id="canvas-scene-2" class="scene"></canvas>
+            <div class="scene-container blend-screen liquid" style="border: 10px solid rgba(255, 255, 255, 0.6);">
+                <!-- <div class="scene-text" aria-hidden="true">🚧 🚧 🚧</div> -->
+                <canvas id="canvas-scene" class="scene "></canvas>
+            </div>
+
+            <!-- <div class="scene-text" aria-hidden="true">👾</div> -->
+            <div class="scene-container backdrop-blur">
+                <canvas id="canvas-scene-3d" class="scene"></canvas>
+                <button id="btn-access" class="scene-button">Allow sensors</button>
+                
+                <!-- <div class="absolute-border"></div> -->
+            </div>
+            <div class="scene-container blend-screen liquid" style="border: 10px solid rgba(255, 255, 255, 0.6);">
+                <!-- <div class="scene-text" aria-hidden="true">2026</div> -->
+                <canvas id="canvas-scene-2" class="scene invert"></canvas>
+            </div>
         </div>
     </main>
     <script type="module" src="./main.js"></script>

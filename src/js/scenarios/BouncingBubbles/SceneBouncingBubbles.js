@@ -50,9 +50,9 @@ export default class SceneBouncingBubbles extends Scene2D {
 
         /** params */
         this.params.nBubbles = nBubbles
-        this.params.radius = 10 // px
-        this.params.linkDistance = 50 // px
-        this.params.lineWidth = 2 // px
+        this.params.radius = 20 // px
+        this.params.linkDistance = 200 // px
+        this.params.lineWidth = 10 // px
         this.params.gravity = 300 // px/s, à inclinaison maximale
         if (this.debug.isActive) {
             this.debugFolder.add(this.params, 'nBubbles', 0, 50, 1).onFinishChange(() => { this.generateBubbles() })
@@ -95,21 +95,35 @@ export default class SceneBouncingBubbles extends Scene2D {
     draw() {
         /** style */
         this.context.strokeStyle = "white"
-        this.context.fillStyle = "black"
+        this.context.fillStyle = "white"
         this.context.lineWidth = this.params.lineWidth
         this.context.lineCap = "round"
 
-        /** liens : chaque paire une seule fois (i < j), soit n(n − 1) / 2 paires → coût en n² */
+        this.context.strokeStyle = "red"
+
+        /**
+         * liens : chaque paire une seule fois (i < j), soit n(n − 1) / 2 paires → coût en n²
+         * opacité : 1 jusqu'à linkDistance / 2 − rayon, puis décroît linéairement jusqu'à 0 à linkDistance (proportionnalité, saturée dans [0, 1])
+         */
+        const { linkDistance, radius } = this.params
+        const opaqueDistance_ = linkDistance / 2 - radius // px
         for (let i = 0; i < this.bubbles.length; i++) {
             const current_ = this.bubbles[i]
             for (let j = i + 1; j < this.bubbles.length; j++) {
                 const next_ = this.bubbles[j]
-                if (distance2d(current_.x, current_.y, next_.x, next_.y) < this.params.linkDistance)
+                const distance_ = distance2d(current_.x, current_.y, next_.x, next_.y)
+                if (distance_ < linkDistance) {
+                    this.context.globalAlpha = clamp((linkDistance - distance_) / (linkDistance - opaqueDistance_), 0, 1)
                     line(this.context, current_.x, current_.y, next_.x, next_.y)
+                }
             }
         }
+        this.context.globalAlpha = 1 // les bulles, elles, restent opaques
 
         /** bulles par-dessus les liens */
+        this.context.lineWidth = 4
+        this.context.strokeStyle = "blue"
+        this.context.fillStyle = "white"
         this.bubbles.forEach(b => { b.draw() })
     }
 

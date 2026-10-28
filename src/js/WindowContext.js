@@ -56,7 +56,10 @@ export default class WindowContext {
     }
 
     /** même schéma que resize : une mesure, répercutée à toutes les scènes */
-    deviceOrientation() { this.scenes.forEach(s => { s.onDeviceOrientation() }) }
+    deviceOrientation() {
+        this.#allowSensors()
+        this.scenes.forEach(s => { s.onDeviceOrientation() })
+    }
 
     set useDeviceAcceleration(isActive) {
         if (isActive && !this.acceleration) {
@@ -71,7 +74,24 @@ export default class WindowContext {
         }
     }
 
-    deviceAcceleration() { this.scenes.forEach(s => { s.onDeviceAcceleration() }) }
+    deviceAcceleration() {
+        this.#allowSensors()
+        this.scenes.forEach(s => { s.onDeviceAcceleration() })
+    }
+
+    /**
+     * SENSORS : faux tant qu'aucune mesure n'est arrivée (ordinateur, ou accès refusé / pas encore demandé sur iOS)
+     * la première mesure le fait passer à vrai, une seule fois : les scènes en sont prévenues, il ne repasse jamais à faux
+     */
+    #isSensorsAllowed = false
+
+    get isSensorsAllowed() { return this.#isSensorsAllowed }
+
+    #allowSensors() {
+        if (this.#isSensorsAllowed) return
+        this.#isSensorsAllowed = true
+        this.scenes.forEach(s => { s.onSensorsAllowed() })
+    }
 
     /**
      * DESTROY : défaire tout ce que le constructeur a fait, dans l'ordre inverse

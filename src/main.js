@@ -1,28 +1,33 @@
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js"
 import WindowContext from "./js/WindowContext"
 import SceneBouncingBubbles from "./js/scenarios/BouncingBubbles/SceneBouncingBubbles"
 import SceneGravityCubes from "./js/scenarios/GravityCubes/SceneGravityCubes"
 import { askMotionAccess } from "./js/utils/device/DeviceAccess"
+import { isMobileDevice } from "./js/utils/system"
 
 /**
  * BUTTONS
  */
 
-/** motion sensor autorization (iOS) */
-document.getElementById("btn-access").addEventListener("click", () => { askMotionAccess() })
+/** motion sensor autorization (iOS) : le bouton ne s'affiche que sur mobile (tablettes ignorées) ; sinon seulement transparent, il garde sa place */
+const btnAccess = document.getElementById("btn-access")
+if (!isMobileDevice(true)) btnAccess.classList.add("is-hidden")
+btnAccess.addEventListener("click", () => { askMotionAccess() })
 
 /** reload */
-document.getElementById("btn-reload").addEventListener("click", () => { window.location.reload() })
+// document.getElementById("btn-reload").addEventListener("click", () => { window.location.reload() })
 
 /**
  * SCENARIO
  */
 
-/** scenes */
-const scene1 = new SceneBouncingBubbles(10, "canvas-scene")
-const scene2 = new SceneGravityCubes(0, "canvas-scene-3d")
-const scene3 = new SceneBouncingBubbles(0, "canvas-scene-2")
+/** modèle du cube (public/ : BASE_URL, et non « / », pour rester valide sous un sous-dossier) : chargé une seule fois, les cubes en reçoivent des clones (asynchrone : on attend le fichier avant de créer les scènes) */
+const portalCube = (await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}gltf/portalcube.glb`)).scene
 
-const ENTRY_MARGIN = 1 // px : l'objet entre juste en deçà du bord, pour ne pas être aussitôt détecté comme sorti
+/** scenes */
+const scene1 = new SceneBouncingBubbles(12, "canvas-scene")
+const scene2 = new SceneGravityCubes(0, "canvas-scene-3d", "btn-access", portalCube)
+const scene3 = new SceneBouncingBubbles(0, "canvas-scene-2")
 
 /**
  * main : les canvas ont la même largeur et sont alignés ; y est ramené sur le bord d'entrée
@@ -42,31 +47,31 @@ const update = () => {
     /** out scene 1 */
     outScene1_up_.forEach(bubble => {
         scene1.removeBubble(bubble)
-        scene3.addBubble(bubble.x, scene3.height + bubble.radius - ENTRY_MARGIN, bubble.vx, bubble.vy) // entre dans la scène 3 par le bas
+        scene3.addBubble(bubble.x, scene3.height + bubble.radius - 1, bubble.vx, bubble.vy) // entre dans la scène 3 par le bas
     })
     outScene1_down_.forEach(bubble => {
         scene1.removeBubble(bubble)
-        scene2.addBubble(bubble.x - scene2.width / 2, scene2.height / 2 + bubble.radius - ENTRY_MARGIN) // entre dans la scène 2 par le haut
+        scene2.addBubble(bubble.x - scene2.width / 2, scene2.height / 2 + scene2.cubeSize / 2 - 1) // entre dans la scène 2 par le haut ; la marge dépend du cube qui entre, pas de la bulle qui sort
     })
 
     /** out scene 2 */
     outScene2_up_.forEach(cube => {
         scene2.removeBubble(cube)
-        scene1.addBubble(cube.position.x + scene2.width / 2, scene1.height + cube.size / 2 - ENTRY_MARGIN) // entre dans la scène 1 par le bas
+        scene1.addBubble(cube.position.x + scene2.width / 2, scene1.height + scene1.params.radius - 1) // entre dans la scène 1 par le bas
     })
     outScene2_down_.forEach(cube => {
         scene2.removeBubble(cube)
-        scene3.addBubble(cube.position.x + scene2.width / 2, -cube.size / 2 + ENTRY_MARGIN) // entre dans la scène 3 par le haut
+        scene3.addBubble(cube.position.x + scene2.width / 2, -scene3.params.radius + 1) // entre dans la scène 3 par le haut
     })
 
     /** out scene 3 */
     outScene3_up_.forEach(bubble => {
         scene3.removeBubble(bubble)
-        scene2.addBubble(bubble.x - scene2.width / 2, -scene2.height / 2 - bubble.radius + ENTRY_MARGIN) // entre dans la scène 2 par le bas
+        scene2.addBubble(bubble.x - scene2.width / 2, -scene2.height / 2 - scene2.cubeSize / 2 + 1) // entre dans la scène 2 par le bas
     })
     outScene3_down_.forEach(bubble => {
         scene3.removeBubble(bubble)
-        scene1.addBubble(bubble.x, -bubble.radius + ENTRY_MARGIN, bubble.vx, bubble.vy) // entre dans la scène 1 par le haut
+        scene1.addBubble(bubble.x, -bubble.radius + 1, bubble.vx, bubble.vy) // entre dans la scène 1 par le haut
     })
 }
 const windowContext = new WindowContext()

@@ -1,31 +1,37 @@
 import * as THREE from "three"
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js"
-import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js"
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js"
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js"
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js"
 import { Composite, Engine, Runner } from "matter-js"
 import Scene3D from "../../canvas-3d/Scene3D"
 import Cube3D from "./Cube3D"
 import Wall from "./Wall"
+import WallCapsule from "./WallCapsule"
+import DomElement from "../../utils/window/DomElement"
 import { clamp, randomRange, toRadians } from "../../utils/math/MathUtils"
-import hdriUrl from "../../../assets/hdri/studio_small_09_1k.hdr?url"
+// import hdriUrl from "../../../assets/hdri/studio_small_09_1k.hdr?url"
+import hdriUrl from "../../../assets/hdri/blender-2k.hdr?url"
 
 const CAMERA_DISTANCE = 100 // px, la caméra regarde le plan z = 0 depuis z = 100
-const CUBE_SIZE = 20 // px, longueur d'une arête
-const CUBE_SEGMENTS = 4 // subdivisions d'un arrondi : plus il y en a, plus la normale varie en douceur
-const CUBE_COLORS = ["red", "yellow", "blue"]
+const CUBE_SIZE = 30 // px, longueur d'une arête
+const CUBE_MATERIALS = [
+    { color: "#111111", metalness: 1, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0 }, // noir brillant : une couche de vernis lisse sur le noir
+    // { color: "#111111", roughness: 0.8 }, // noir mat : pas de vernis, la lumière est diffusée
+    { color: "#eeeae0", roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0 } // blanc légèrement cassé, brillant
+]
 const WALL_THICKNESS = 15 // px
 const STANDARD_GRAVITY = 9.81 // m/s²
 const GRAVITY_SCALE_FACTOR = 5 // gravité du moteur renforcée, pour que les cubes traversent vite le labyrinthe
-const MAZE_WIDTH_RATIO = 2 / 3 // part de la largeur du canvas couverte par une barre du labyrinthe
-const MAZE_OFFSET_RATIO = 1 / 6 // part de la hauteur du canvas entre son centre et une barre
-const MSAA_SAMPLES = 4 // échantillons par pixel, moyennés : antialiasing dans la chaîne d'effets
+const MAZE_WIDTH_RATIO = 0.15 // part de la largeur du canvas couverte par une barre du labyrinthe
+const MAZE_OFFSET_RATIO = 0 // 1 / 5 // part de la hauteur du canvas entre son centre et une barre
 
 export default class SceneGravityCubes extends Scene3D {
-    constructor(nCubes, id = "canvas-scene") {
+    constructor(nCubes, id = "canvas-scene", btnId = "btn-access", cubeModel) {
         super(id)
+
+        /** modèle du cube : chargé une fois par le scénario (main.js), chaque cube en reçoit un clone */
+        this.cubeModel = cubeModel
+
+        /** bouton : posé par-dessus la scène, ses bounds donnent la capsule */
+        this.btnElement = new DomElement(btnId)
 
         /** caméra orthographique : pas de perspective, son cadre (left, right, top, bottom) est réglé au resize */
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2 * CAMERA_DISTANCE)
@@ -40,43 +46,16 @@ export default class SceneGravityCubes extends Scene3D {
         this.environmentMap = new HDRLoader().load(hdriUrl, () => { this.scene.environment = this.environmentMap }) // asynchrone : la scène n'est éclairée qu'une fois l'image chargée
         this.environmentMap.mapping = THREE.EquirectangularReflectionMapping // rectangle (longitude, latitude) → sphère des directions
 
-        /** params : des curseurs dans [0, 1] */
-        this.params.roughness = 0.3 // 0 = lisse (reflet net), 1 = mat (lumière diffusée)
-        this.params.metalness = 0 // 0 = plastique, 1 = métal (le reflet prend la couleur du matériau)
+        /** params : des curseurs */
+        this.params.pixelRatio = this.windowContext.pixelRatio // pixels du bitmap par px CSS : le coût de rendu varie comme son carré
         this.params.environmentIntensity = 1 // × intensité de l'HDRI
-        this.params.cubeRadius = 4 // px, rayon des arêtes (au plus une demi-arête)
         if (this.debug.isActive) {
-            this.debugFolder.add(this.params, 'roughness', 0, 1).onChange(() => { this.materials.forEach(m => { m.roughness = this.params.roughness }) })
-            this.debugFolder.add(this.params, 'metalness', 0, 1).onChange(() => { this.materials.forEach(m => { m.metalness = this.params.metalness }) })
+            this.debugFolder.add(this.params, 'pixelRatio', 0.5, 3).onFinishChange(() => { this.resize() }) // redimensionne le bitmap : une fois le curseur relâché
             this.debugFolder.add(this.params, 'environmentIntensity', 0, 3).onChange(() => { this.scene.environmentIntensity = this.params.environmentIntensity })
-            this.debugFolder.add(this.params, 'cubeRadius', 0, CUBE_SIZE / 2).onFinishChange(() => { this.updateCubeGeometry() })
         }
 
-        /** materials : un par couleur, partagé par les cubes de cette couleur ; un réglage s'applique à tous */
-        const { roughness, metalness } = this.params
-        this.materials = CUBE_COLORS.map(color => new THREE.MeshStandardMaterial({ color, roughness, metalness }))
-
-        /** geometry : un cube aux arêtes arrondies, partagé par tous les cubes */
-        this.cubeGeometry = new RoundedBoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE, CUBE_SEGMENTS, this.params.cubeRadius)
-
-        /** params : bloom */
-        this.params.bloomStrength = 0.5
-        this.params.bloomRadius = 0.4 // [0, 1]
-        this.params.bloomThreshold = 1 // intensité au-delà de laquelle un pixel diffuse : seuls les reflets les plus forts
-        if (this.debug.isActive) {
-            this.debugFolder.add(this.params, 'bloomStrength', 0, 3).onChange(() => { this.bloomPass.strength = this.params.bloomStrength })
-            this.debugFolder.add(this.params, 'bloomRadius', 0, 1).onChange(() => { this.bloomPass.radius = this.params.bloomRadius })
-            this.debugFolder.add(this.params, 'bloomThreshold', 0, 2).onChange(() => { this.bloomPass.threshold = this.params.bloomThreshold })
-        }
-
-        /** post-processing : l'image rendue passe par une chaîne d'effets, chacun reçoit l'image du précédent */
-        const { bloomStrength, bloomRadius, bloomThreshold } = this.params
-        this.composer = new EffectComposer(this.renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: MSAA_SAMPLES })) // taille réglée au resize
-        this.composer.addPass(new RenderPass(this.scene, this.camera))
-        this.bloomPass = new UnrealBloomPass(new THREE.Vector2(), bloomStrength, bloomRadius, bloomThreshold) // taille réglée au resize
-        this.composer.addPass(this.bloomPass)
-        this.outputPass = new OutputPass() // en dernier : conversion linéaire → sRGB
-        this.composer.addPass(this.outputPass)
+        /** materials : partagés ; MeshPhysicalMaterial ajoute le vernis (clearcoat) à MeshStandardMaterial */
+        this.materials = CUBE_MATERIALS.map(parameters => new THREE.MeshPhysicalMaterial(parameters))
 
         /** physics : le moteur et sa propre boucle (Runner), qui le fait avancer à chaque image */
         this.engine = Engine.create()
@@ -93,7 +72,7 @@ export default class SceneGravityCubes extends Scene3D {
         /** cubes : positions en px, tirées dans le canvas (origine au centre) */
         this.cubes = []
         for (let i = 0; i < nCubes; i++) {
-            const cube_ = new Cube3D(CUBE_SIZE, this.cubeGeometry, this.materials[i % this.materials.length])
+            const cube_ = new Cube3D(CUBE_SIZE, this.cubeModel, this.materials[i % this.materials.length])
             cube_.setPosition(
                 randomRange(-this.width / 2 + CUBE_SIZE, this.width / 2 - CUBE_SIZE),
                 randomRange(-this.height / 2 + CUBE_SIZE, this.height / 2 - CUBE_SIZE)
@@ -108,25 +87,63 @@ export default class SceneGravityCubes extends Scene3D {
             right: new Wall("blue", CUBE_SIZE)
         }
 
-        /** maze */
-        this.wallMaze1 = new Wall("white", CUBE_SIZE)
-        this.wallMaze2 = new Wall("white", CUBE_SIZE)
-        this.world.add(this.wallMaze1)
-        this.world.add(this.wallMaze2)
         Object.values(this.walls).forEach(w => { this.world.add(w) })
 
         /** le monde physique : les mêmes objets, côté Matter.js */
-        Composite.add(this.engine.world, [...this.cubes, ...Object.values(this.walls), this.wallMaze1, this.wallMaze2].map(o => o.body))
+        Composite.add(this.engine.world, [...this.cubes, ...Object.values(this.walls)].map(o => o.body))
+
+        /** maze : deux capsules, créées au premier resize, comme celle du bouton */
+        this.wallMaze = []
+
+        /** capsule : créée au premier resize, aux dimensions et à la position du bouton */
+        this.wallCapsule = null
 
         /** init */
         this.resize()
     }
 
-    /** une géométrie ne se modifie pas : on la remplace, et on détruit l'ancienne */
-    updateCubeGeometry() {
-        this.cubeGeometry.dispose()
-        this.cubeGeometry = new RoundedBoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE, CUBE_SEGMENTS, this.params.cubeRadius)
-        this.cubes.forEach(c => { c.geometry = this.cubeGeometry })
+    /** même principe que pour la capsule du bouton : les barres du labyrinthe sont remplacées, les anciennes détruites */
+    updateWallMaze() {
+        this.wallMaze.forEach(w => {
+            w.removeFromParent()
+            Composite.remove(this.engine.world, w.body)
+            w.dispose()
+        })
+
+        /** une barre collée au bord gauche en haut, une au bord droit en bas ; le passage alterne */
+        const width_ = this.width * MAZE_WIDTH_RATIO // px
+        const offsetX_ = (this.width - width_) / 2 // px, du centre du canvas au centre d'une barre collée à un bord
+        const offsetY_ = this.height * MAZE_OFFSET_RATIO // px
+        const radius_ = WALL_THICKNESS / 2 // px, rayon d'une extrémité : décalées vers l'extérieur, les extrémités arrondies collées au bord sortent du cadre
+
+        this.wallMaze = [[-offsetX_ - radius_, offsetY_], [offsetX_ + radius_, -offsetY_]].map(([x, y]) => {
+            const wall_ = new WallCapsule(width_, WALL_THICKNESS, this.materials[0])
+            wall_.setPosition(x, y)
+            this.world.add(wall_)
+            Composite.add(this.engine.world, wall_.body)
+            return wall_
+        })
+    }
+
+    /** une capsule ne se redimensionne pas (les extrémités se déformeraient) : on la remplace, et on détruit l'ancienne */
+    updateWallCapsule() {
+        if (this.wallCapsule) {
+            this.wallCapsule.removeFromParent()
+            Composite.remove(this.engine.world, this.wallCapsule.body)
+            this.wallCapsule.dispose()
+        }
+
+        /** bounds du bouton : taille affichée et centre, relatif au canvas (mesurés au même instant) → repère de la scène */
+        const { left, right, top, bottom } = this.btnElement
+        const centerX_ = (left + right) / 2 - this.domElement.left // px
+        const centerY_ = (top + bottom) / 2 - this.domElement.top // px
+        const x_ = centerX_ - this.width / 2 // px, repère de la scène : origine au centre
+        const y_ = this.height / 2 - centerY_ // px, y vers le haut
+
+        this.wallCapsule = new WallCapsule(right - left, bottom - top, this.materials[0])
+        this.wallCapsule.setPosition(x_, y_)
+        this.world.add(this.wallCapsule)
+        Composite.add(this.engine.world, this.wallCapsule.body)
     }
 
     update() {
@@ -134,13 +151,16 @@ export default class SceneGravityCubes extends Scene3D {
         this.render()
     }
 
-    /** la chaîne d'effets remplace le rendu direct */
-    render() { this.composer.render() }
+    /** la densité vient du curseur, plus de l'écran */
+    get pixelRatio() { return this.params.pixelRatio }
+
+    /** taille d'un cube (px) : main.js s'en sert pour placer un objet qui entre juste en deçà du bord */
+    get cubeSize() { return CUBE_SIZE }
 
 
     /** échanges entre scènes, par des méthodes publiques, comme les scènes 2D : position en px, repère de la scène */
     addBubble(x, y) {
-        const cube_ = new Cube3D(CUBE_SIZE, this.cubeGeometry, this.materials[Math.floor(this.materials.length * Math.random())])
+        const cube_ = new Cube3D(CUBE_SIZE, this.cubeModel, this.materials[Math.floor(this.materials.length * Math.random())])
         cube_.setPosition(x, y)
         this.cubes.push(cube_)
         this.world.add(cube_)
@@ -157,6 +177,9 @@ export default class SceneGravityCubes extends Scene3D {
         /** liste */
         this.cubes = this.cubes.filter(c => c !== cube)
     }
+
+    /** accès accordé : le bouton s'efface (classe CSS, transition d'opacité) ; il garde sa place, donc la capsule aussi */
+    onSensorsAllowed() { this.btnElement.element.classList.add("is-hidden") }
 
     onDeviceAcceleration() {
         const { x, y } = this.windowContext.acceleration
@@ -177,15 +200,17 @@ export default class SceneGravityCubes extends Scene3D {
      */
     onDeviceOrientation() {
         const { beta, gamma } = this.windowContext.orientation
-        this.world.rotation.set(toRadians(beta), toRadians(gamma), 0, 'ZXY')
+        this.world.rotation.set(-toRadians(beta), -toRadians(gamma), 0, 'ZXY')
+    }
+
+    /** au scroll, la position du canvas et celle du bouton changent ensemble : on mesure les deux */
+    scroll() {
+        super.scroll()
+        this.btnElement.measure()
     }
 
     resize() {
         super.resize()
-
-        /** post-processing : mêmes dimensions et même densité que le renderer */
-        this.composer.setPixelRatio(this.windowContext.pixelRatio)
-        this.composer.setSize(this.width, this.height)
 
         /** référentiel : cadre de la caméra = le canvas en px → origine au centre, y vers le haut, 1 unité = 1 px */
         this.camera.left = -this.width / 2
@@ -201,16 +226,12 @@ export default class SceneGravityCubes extends Scene3D {
         right.setSize(WALL_THICKNESS, 2 * this.height)
         right.setPosition(this.width / 2 + WALL_THICKNESS / 2, 0)
 
-        /** maze : une barre collée au bord gauche en haut, une au bord droit en bas ; le passage alterne */
-        const width_ = this.width * MAZE_WIDTH_RATIO // px
-        const offsetX_ = (this.width - width_) / 2 // px, du centre du canvas au centre d'une barre collée à un bord
-        const offsetY_ = this.height * MAZE_OFFSET_RATIO // px
+        /** maze */
+        this.updateWallMaze()
 
-        this.wallMaze1.setSize(width_, WALL_THICKNESS)
-        this.wallMaze1.setPosition(-offsetX_, offsetY_)
-
-        this.wallMaze2.setSize(width_, WALL_THICKNESS)
-        this.wallMaze2.setPosition(offsetX_, -offsetY_)
+        /** capsule : le bouton est mesuré après le canvas, au même resize */
+        this.btnElement.measure()
+        this.updateWallCapsule()
 
         /** cubes restés hors du cadre (canvas rétréci) : ramenés entre les murs, sinon ils tomberaient hors du monde */
         const limitX_ = this.width / 2 - CUBE_SIZE // px
@@ -221,15 +242,16 @@ export default class SceneGravityCubes extends Scene3D {
 
     destroy() {
         super.destroy()
-        this.cubeGeometry.dispose()
+        this.cubeModel.traverse(o => {
+            if (!o.isMesh) return
+            o.geometry.dispose()
+            ;[o.material].flat().forEach(m => { m.dispose() }) // matériaux d'origine du glb, plus utilisés par les cubes
+        })
         this.materials.forEach(m => { m.dispose() })
         Object.values(this.walls).forEach(w => { w.dispose() })
-        this.wallMaze1.dispose()
-        this.wallMaze2.dispose()
+        this.wallMaze.forEach(w => { w.dispose() })
+        this.wallCapsule.dispose()
         this.environmentMap.dispose()
-        this.bloomPass.dispose()
-        this.outputPass.dispose()
-        this.composer.dispose()
         Composite.clear(this.engine.world)
         Runner.stop(this.runner) // sinon la boucle du moteur continue après destroy
         Engine.clear(this.engine)
