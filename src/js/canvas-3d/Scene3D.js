@@ -28,8 +28,8 @@ export default class Scene3D extends THREE.Scene {
         this.camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, this.domElement.aspectRatio, 0.1, 2 * CAMERA_DISTANCE)
         this.camera.position.z = CAMERA_DISTANCE
 
-        /** renderer : dessine dans le canvas de la scène */
-        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true })
+        /** renderer : dessine dans le canvas de la scène ; alpha : le canvas a un canal de transparence, le fond est transparent tant que this.background est vide (clear alpha = 0) */
+        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: true })
 
         /** init */
         this.resize()
