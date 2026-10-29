@@ -4,7 +4,7 @@ import { Bodies, Body } from "matter-js"
 export default class Wall extends THREE.Mesh {
     constructor(color, depth) {
         /** géométrie unité (1 × 1 × 1 px), mise à la taille voulue par homothétie (scale) */
-        super(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color }))
+        super(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color }))
         this.depth = depth // px
 
         /** corps physique statique, lui aussi de taille unité */

@@ -1,13 +1,16 @@
 import * as THREE from "three"
+import { HDRLoader } from "three/addons/loaders/HDRLoader.js"
 import { Composite, Engine, Runner } from "matter-js"
 import Scene3D from "../../canvas-3d/Scene3D"
 import Cube3D from "./Cube3D"
 import Wall from "./Wall"
 import { clamp, randomRange } from "../../utils/math/MathUtils"
+import hdriUrl from "../../../assets/hdri/blender-2k.hdr?url"
 
 const CAMERA_DISTANCE = 100 // px, la caméra regarde le plan z = 0 depuis z = 100
 const CUBE_SIZE = 30 // px, longueur d'une arête
-const CUBE_COLORS = ["red", "yellow", "blue"]
+const CUBE_COLORS = ["#111111", "#eeeae0"] // noir, blanc légèrement cassé
+const CUBE_MATERIAL = { roughness: 0.2, metalness: 0.5 } // commun à tous les cubes, seule la couleur change : 0 = lisse (reflet net), 1 = mat (lumière diffusée) ; métal : le reflet prend la couleur du matériau
 const WALL_THICKNESS = 15 // px
 const STANDARD_GRAVITY = 9.81 // m/s²
 const GRAVITY_SCALE_FACTOR = 5 // gravité du moteur renforcée, pour que les cubes traversent vite le labyrinthe
@@ -25,6 +28,16 @@ export default class SceneGravityCubes extends Scene3D {
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2 * CAMERA_DISTANCE)
         this.camera.position.z = CAMERA_DISTANCE
 
+        /** lumière : l'HDRI mesure la lumière qui arrive de chaque direction ; elle éclaire tous les matériaux de la scène */
+        this.environmentMap = new HDRLoader().load(hdriUrl, () => { this.environment = this.environmentMap }) // asynchrone : la scène n'est éclairée qu'une fois l'image chargée
+        this.environmentMap.mapping = THREE.EquirectangularReflectionMapping // rectangle (longitude, latitude) → sphère des directions
+
+        /** params : des curseurs */
+        this.params.environmentIntensity = 1 // × intensité de l'HDRI
+        if (this.debug.isActive) {
+            this.debugFolder.add(this.params, 'environmentIntensity', 0, 3).onChange(() => { this.environmentIntensity = this.params.environmentIntensity })
+        }
+
         /** physics : le moteur et sa propre boucle (Runner), qui le fait avancer à chaque image */
         this.engine = Engine.create()
         this.runner = Runner.create()
@@ -34,8 +47,8 @@ export default class SceneGravityCubes extends Scene3D {
         this.windowContext.useDeviceAcceleration = true
         this.engine.gravity.scale *= GRAVITY_SCALE_FACTOR
 
-        /** materials : un par couleur, partagés par les cubes de cette couleur ; ils appartiennent à la scène, qui les détruit */
-        this.materials = CUBE_COLORS.map(color => new THREE.MeshBasicMaterial({ color }))
+        /** materials : un par couleur, partagés par les cubes de cette couleur ; MeshStandardMaterial réagit à la lumière, ils appartiennent à la scène */
+        this.materials = CUBE_COLORS.map(color => new THREE.MeshStandardMaterial({ color, ...CUBE_MATERIAL }))
 
         /** cubes : positions en px, tirées dans le canvas (origine au centre) */
         this.cubes = []
