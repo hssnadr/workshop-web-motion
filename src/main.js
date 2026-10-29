@@ -1,3 +1,4 @@
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js"
 import WindowContext from "./js/WindowContext"
 import SceneBouncingBubbles from "./js/scenarios/BouncingBubbles/SceneBouncingBubbles"
 import SceneGravityCubes from "./js/scenarios/GravityCubes/SceneGravityCubes"
@@ -14,9 +15,12 @@ document.getElementById("btn-access").addEventListener("click", () => { askMotio
  * SCENARIO
  */
 
+/** modèle du cube (public/ : BASE_URL, et non « / », pour rester valide sous un sous-dossier) : chargé une seule fois, les cubes en reçoivent des clones (asynchrone : on attend le fichier avant de créer les scènes) */
+const portalCube = (await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}gltf/portalcube.glb`)).scene
+
 /** scenes */
 const scene1 = new SceneBouncingBubbles(10, "canvas-scene")
-const scene2 = new SceneGravityCubes(0, "canvas-scene-3d")
+const scene2 = new SceneGravityCubes(0, "canvas-scene-3d", portalCube)
 const scene3 = new SceneBouncingBubbles(0, "canvas-scene-2")
 
 const ENTRY_MARGIN = 1 // px : l'objet entre juste en deçà du bord, pour ne pas être aussitôt détecté comme sorti
