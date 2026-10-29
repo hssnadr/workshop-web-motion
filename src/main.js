@@ -20,7 +20,7 @@ const portalCube = (await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL
 
 /** scenes */
 const scene1 = new SceneBouncingBubbles(12, "canvas-scene")
-const scene2 = new SceneGravityCubes(0, "canvas-scene-3d", portalCube)
+const scene2 = new SceneGravityCubes(0, "canvas-scene-3d", portalCube, "btn-access")
 const scene3 = new SceneBouncingBubbles(0, "canvas-scene-2")
 
 const ENTRY_MARGIN = 1 // px : l'objet entre juste en deçà du bord, pour ne pas être aussitôt détecté comme sorti

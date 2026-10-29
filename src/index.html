@@ -11,18 +11,14 @@
 
 <body>
     <main>
-        <header>
-            <div class="buttons">
-                <button id="btn-access">Allow sensors</button>
-            </div>
-            <p id="debug"></p>
-        </header>
+        <p id="debug"></p>
         <div class="scenes">
             <div class="scene-container liquid blend-screen">
                 <canvas id="canvas-scene"></canvas>
             </div>
             <div class="scene-container pocket backdrop-blur">
                 <canvas id="canvas-scene-3d"></canvas>
+                <button id="btn-access" class="scene-button">Allow sensors</button>
             </div>
             <div class="scene-container liquid blend-screen">
                 <canvas id="canvas-scene-2" class="hue-rotate"></canvas>
