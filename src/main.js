@@ -19,7 +19,7 @@ document.getElementById("btn-access").addEventListener("click", () => { askMotio
 const portalCube = (await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}gltf/portalcube.glb`)).scene
 
 /** scenes */
-const scene1 = new SceneBouncingBubbles(10, "canvas-scene")
+const scene1 = new SceneBouncingBubbles(12, "canvas-scene")
 const scene2 = new SceneGravityCubes(0, "canvas-scene-3d", portalCube)
 const scene3 = new SceneBouncingBubbles(0, "canvas-scene-2")
 
