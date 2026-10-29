@@ -12,6 +12,7 @@
     --radius: 1.5rem;
     --page-width: 40rem;
     --font: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --liquid-border: 10px solid rgba(255, 255, 255, 0.6);
 }
 
 /* 2. Reset */
@@ -145,12 +146,6 @@ button:focus-visible {
     position: relative; /* repère des calques posés sur le conteneur (ombre, bouton) */
 }
 
-/* cadre : bordure blanche, fond noir */
-.frame {
-    border: 2px solid var(--white);
-    background-color: var(--black);
-}
-
 /* effet « poche » : ombre intérieure en calque par-dessus le canvas, à poser sur un .scene-container (sur le conteneur lui-même, le canvas opaque la cacherait) */
 .pocket::after {
     content: "";
@@ -165,4 +160,19 @@ button:focus-visible {
 .backdrop-blur {
     -webkit-backdrop-filter: blur(4px); /* Safari */
     backdrop-filter: blur(4px);
+}
+
+/* surcouche d'effet (goo) : contrast() agit sur les couleurs, pas sur la transparence, d'où un fond opaque pour seuiller le flou du bord des bulles */
+.liquid {
+    border: var(--liquid-border);
+    background-color: var(--black);
+    filter: blur(10px) contrast(8);
+}
+
+.blend-screen {
+    mix-blend-mode: screen;
+}
+
+.hue-rotate {
+    filter: hue-rotate(133deg);
 }

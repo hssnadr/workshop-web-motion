@@ -60,7 +60,7 @@ export default class SceneBouncingBubbles extends Scene2D {
 
         /** params */
         this.params.nBubbles = nBubbles
-        this.params.radius = 10 // px
+        this.params.radius = 20 // px
         this.params.linkDistance = 50 // px
         this.params.lineWidth = 2 // px
         this.params.gStrength = 300 // px/s, à inclinaison maximale
@@ -103,7 +103,7 @@ export default class SceneBouncingBubbles extends Scene2D {
     draw() {
         /** style */
         this.context.strokeStyle = "white"
-        this.context.fillStyle = "black"
+        this.context.fillStyle = "white"
         this.context.lineWidth = this.params.lineWidth
         this.context.lineCap = "round"
 
