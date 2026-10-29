@@ -9,6 +9,14 @@ let instance = null
 const MAX_PIXEL_RATIO = 2 // au-delà, le coût de rendu augmente sans gain visible
 
 export default class WindowContext {
+    /**
+     * capteurs : faux tant qu'aucune mesure n'est arrivée (ordinateur, ou accès refusé / pas encore demandé sur iOS)
+     * la première mesure le fait passer à vrai, une seule fois : il ne repasse jamais à faux
+     */
+    #isSensorsAllowed = false
+
+    get isSensorsAllowed() { return this.#isSensorsAllowed }
+
     constructor() {
         if (instance) return instance
         instance = this
@@ -56,7 +64,10 @@ export default class WindowContext {
     }
 
     /** même schéma que resize : une mesure, répercutée à toutes les scènes */
-    onDeviceOrientation() { this.scenes.forEach(s => { s.onDeviceOrientation() }) }
+    onDeviceOrientation() {
+        this.#isSensorsAllowed = true
+        this.scenes.forEach(s => { s.onDeviceOrientation() })
+    }
 
     set useDeviceAcceleration(isActive) {
         if (isActive && !this.acceleration) {
@@ -71,7 +82,10 @@ export default class WindowContext {
         }
     }
 
-    onDeviceAcceleration() { this.scenes.forEach(s => { s.onDeviceAcceleration() }) }
+    onDeviceAcceleration() {
+        this.#isSensorsAllowed = true
+        this.scenes.forEach(s => { s.onDeviceAcceleration() })
+    }
 
     /**
      * DESTROY : défaire tout ce que le constructeur a fait, dans l'ordre inverse
