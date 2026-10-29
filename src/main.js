@@ -54,23 +54,23 @@ const update = () => {
     })
     outScene1_down_.forEach(bubble => {
         scene1.removeBubble(bubble)
-        scene2.addBubble(bubble.x - scene2.width / 2, scene2.height / 2 + scene2.cubeSize / 2 - 1) // entre dans la scène 2 par le haut ; la marge dépend du cube qui entre, pas de la bulle qui sort
+        scene2.addCube(bubble.x - scene2.width / 2, scene2.height / 2 + scene2.cubeSize / 2 - 1) // entre dans la scène 2 par le haut ; la marge dépend du cube qui entre, pas de la bulle qui sort
     })
 
     /** out scene 2 */
     outScene2_up_.forEach(cube => {
-        scene2.removeBubble(cube)
+        scene2.removeCube(cube)
         scene1.addBubble(cube.position.x + scene2.width / 2, scene1.height + scene1.params.radius - 1) // entre dans la scène 1 par le bas
     })
     outScene2_down_.forEach(cube => {
-        scene2.removeBubble(cube)
+        scene2.removeCube(cube)
         scene3.addBubble(cube.position.x + scene2.width / 2, -scene3.params.radius + 1) // entre dans la scène 3 par le haut
     })
 
     /** out scene 3 */
     outScene3_up_.forEach(bubble => {
         scene3.removeBubble(bubble)
-        scene2.addBubble(bubble.x - scene2.width / 2, -scene2.height / 2 - scene2.cubeSize / 2 + 1) // entre dans la scène 2 par le bas
+        scene2.addCube(bubble.x - scene2.width / 2, -scene2.height / 2 - scene2.cubeSize / 2 + 1) // entre dans la scène 2 par le bas
     })
     outScene3_down_.forEach(bubble => {
         scene3.removeBubble(bubble)

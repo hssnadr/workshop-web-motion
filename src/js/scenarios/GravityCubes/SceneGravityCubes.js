@@ -47,10 +47,8 @@ export default class SceneGravityCubes extends Scene3D {
         this.environmentMap.mapping = THREE.EquirectangularReflectionMapping // rectangle (longitude, latitude) → sphère des directions
 
         /** params : des curseurs */
-        this.params.pixelRatio = this.windowContext.pixelRatio // pixels du bitmap par px CSS : le coût de rendu varie comme son carré
         this.params.environmentIntensity = 1 // × intensité de l'HDRI
         if (this.debug.isActive) {
-            this.debugFolder.add(this.params, 'pixelRatio', 0.5, 3).onFinishChange(() => { this.resize() }) // redimensionne le bitmap : une fois le curseur relâché
             this.debugFolder.add(this.params, 'environmentIntensity', 0, 3).onChange(() => { this.environmentIntensity = this.params.environmentIntensity })
         }
 
@@ -153,15 +151,12 @@ export default class SceneGravityCubes extends Scene3D {
         this.render()
     }
 
-    /** la densité vient du curseur, plus de l'écran */
-    get pixelRatio() { return this.params.pixelRatio }
-
     /** taille d'un cube (px) : main.js s'en sert pour placer un objet qui entre juste en deçà du bord */
     get cubeSize() { return CUBE_SIZE }
 
 
     /** échanges entre scènes, par des méthodes publiques, comme les scènes 2D : position en px, repère de la scène */
-    addBubble(x, y) {
+    addCube(x, y) {
         const cube_ = new Cube3D(CUBE_SIZE, this.cubeModel, this.materials[Math.floor(this.materials.length * Math.random())])
         cube_.setPosition(x, y)
         this.cubes.push(cube_)
@@ -169,7 +164,7 @@ export default class SceneGravityCubes extends Scene3D {
         Composite.add(this.engine.world, cube_.body)
     }
 
-    removeBubble(cube) {
+    removeCube(cube) {
         /** three.js : géométrie et matériau restent, partagés avec les autres cubes */
         cube.removeFromParent()
 

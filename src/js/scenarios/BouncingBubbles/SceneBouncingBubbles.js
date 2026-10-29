@@ -4,7 +4,6 @@ import { circle, line } from "../../canvas-2d/Shapes2D"
 import { clamp, distance2d, randomRange } from "../../utils/math/MathUtils"
 
 const MAX_SPEED = 100 // px/s
-const MAX_TILT = 90 // deg : inclinaison qui donne l'effet maximal
 
 class Bubble {
     constructor(context, x, y, radius) {
@@ -19,24 +18,34 @@ class Bubble {
         /** vitesse : un déplacement par seconde, indépendant de la fréquence de l'écran */
         this.vx = randomRange(-MAX_SPEED, MAX_SPEED) // px/s
         this.vy = randomRange(-MAX_SPEED, MAX_SPEED) // px/s
+
+        /** fausse gravité : une vitesse (px/s) ajoutée à celle de la bulle, fixée par la scène à chaque mesure d'orientation */
+        this.driftX = 0 // px/s
+        this.driftY = 0 // px/s
     }
 
     /**
      * modèle d'état : dx = v·dt (px/s × s = px)
-     * gravité, modèle simplifié : une vitesse (px/s) ajoutée à celle de la bulle ; annulée aux bords gauche et droit, sinon elle la pousserait hors du cadre
+     * fausse gravité (dérive) : annulée aux bords gauche et droit, sinon elle pousserait la bulle hors du cadre
      * bords haut et bas ouverts : la bulle sort, et main.js la fait entrer dans une autre scène
      */
-    update(width, gravity) {
+    update(width, height) {
         const dt_ = this.time.delta / 1000 // ms → s
-        const isOnBorderX_ = this.x < this.radius || this.x > width - this.radius
-        const gx_ = isOnBorderX_ ? 0 : gravity.x
 
-        this.x += (this.vx + gx_) * dt_
-        this.y += (this.vy + gravity.y) * dt_
+        const isOnBorderX_ = this.x < this.radius || this.x > width - this.radius
+        // const isOnBorderY_ = this.y < this.radius || this.y > height - this.radius // bords haut et bas fermés
+        const driftX_ = isOnBorderX_ ? 0 : this.driftX
+        const driftY_ = this.driftY // bords haut et bas ouverts : la dérive n'est pas annulée
+        // const driftY_ = isOnBorderY_ ? 0 : this.driftY
+
+        this.x += (this.vx + driftX_) * dt_
+        this.y += (this.vy + driftY_) * dt_
 
         /** bords gauche et droit : la vitesse repart toujours vers l'intérieur (idempotent : appliquer la règle deux fois ne change rien) */
         if (this.x < this.radius) this.vx = Math.abs(this.vx)
         if (this.x > width - this.radius) this.vx = -Math.abs(this.vx)
+        // if (this.y < this.radius) this.vy = Math.abs(this.vy)
+        // if (this.y > height - this.radius) this.vy = -Math.abs(this.vy)
     }
 
     draw() {
@@ -53,22 +62,22 @@ export default class SceneBouncingBubbles extends Scene2D {
         this.params.radius = 20 // px
         this.params.linkDistance = 200 // px
         this.params.lineWidth = 10 // px
-        this.params.gravity = 300 // px/s, à inclinaison maximale
+        this.params.gStrength = 300 // px/s, à inclinaison maximale
         if (this.debug.isActive) {
             this.debugFolder.add(this.params, 'nBubbles', 0, 50, 1).onFinishChange(() => { this.generateBubbles() })
             this.debugFolder.add(this.params, 'radius', 1, 30).onChange(() => { this.bubbles.forEach(b => { b.radius = this.params.radius }) })
             this.debugFolder.add(this.params, 'linkDistance', 0, 300)
             this.debugFolder.add(this.params, 'lineWidth', 1, 10)
-            this.debugFolder.add(this.params, 'gravity', 0, 500)
+            this.debugFolder.add(this.params, 'gStrength', 0, 500)
         }
 
-        /** device motion : inclinaison calibrée, chaque composante dans [−1, 1] */
+        /** device motion */
         this.windowContext.useDeviceOrientation = true
-        this.tilt = { x: 0, y: 0 }
+        this.orientation = this.windowContext.orientation
 
         /** init */
-        this.generateBubbles()
         this.resize()
+        this.generateBubbles()
     }
 
     /** bubbles : conditions initiales tirées uniformément dans le canvas, à un rayon des bords */
@@ -84,9 +93,7 @@ export default class SceneBouncingBubbles extends Scene2D {
 
     /** état → règle d'évolution → observation */
     update() {
-        /** gravité : l'inclinaison calibrée, mise à l'échelle (px/s) */
-        const gravity_ = { x: this.tilt.x * this.params.gravity, y: this.tilt.y * this.params.gravity }
-        this.bubbles.forEach(b => { b.update(this.width, gravity_) })
+        this.bubbles.forEach(b => { b.update(this.width, this.height) })
 
         this.clear()
         this.draw()
@@ -138,10 +145,17 @@ export default class SceneBouncingBubbles extends Scene2D {
     removeBubble(bubble) { this.bubbles = this.bubbles.filter(b => b !== bubble) }
 
     onDeviceOrientation() {
-        const { beta, gamma } = this.windowContext.orientation
+        let gx_ = this.orientation.gamma / 90
+        let gy_ = this.orientation.beta / 90
+        gx_ = clamp(gx_, -1, 1)
+        gy_ = clamp(gy_, -1, 1)
 
-        /** calibrer : angle ramené à [−1, 1] (÷ 90°), puis saturé au-delà (clamp) ; gamma penche à gauche / droite, beta vers l'avant / l'arrière */
-        this.tilt.x = clamp(gamma / MAX_TILT, -1, 1)
-        this.tilt.y = clamp(beta / MAX_TILT, -1, 1)
+        /** update bubbles */
+        if (!!this.bubbles) {
+            this.bubbles.forEach(b => {
+                b.driftX = gx_ * this.params.gStrength
+                b.driftY = gy_ * this.params.gStrength
+            })
+        }
     }
 }
