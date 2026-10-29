@@ -77,6 +77,9 @@ export default class Scene3D extends THREE.Scene {
             })
         })
 
+        /** la lumière d'environnement est une texture de la scène, pas d'un mesh : le parcours ne la voit pas */
+        this.environment?.dispose()
+
         this.renderer.dispose()
         if (this.debug.isActive) this.debugFolder.destroy()
     }
