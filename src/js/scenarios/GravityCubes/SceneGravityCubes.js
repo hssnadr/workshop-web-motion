@@ -4,6 +4,8 @@ import { Composite, Engine, Runner } from "matter-js"
 import Scene3D from "../../canvas-3d/Scene3D"
 import Cube3D from "./Cube3D"
 import Wall from "./Wall"
+import WallCapsule from "./WallCapsule"
+import DomElement from "../../utils/window/DomElement"
 import { clamp, randomRange, toRadians } from "../../utils/math/MathUtils"
 import hdriUrl from "../../../assets/hdri/blender-2k.hdr?url"
 
@@ -14,12 +16,15 @@ const CUBE_MATERIAL = { roughness: 0.2, metalness: 0.5 } // commun à tous les c
 const WALL_THICKNESS = 15 // px
 const STANDARD_GRAVITY = 9.81 // m/s²
 const GRAVITY_SCALE_FACTOR = 5 // gravité du moteur renforcée, pour que les cubes traversent vite le labyrinthe
-const MAZE_WIDTH_RATIO = 2 / 3 // part de la largeur du canvas couverte par une barre du labyrinthe
-const MAZE_OFFSET_RATIO = 1 / 6 // part de la hauteur du canvas entre son centre et une barre
+const MAZE_WIDTH_RATIO = 0.15 // part de la largeur du canvas couverte par une barre du labyrinthe
+const MAZE_OFFSET_RATIO = 0 // part de la hauteur du canvas entre son centre et une barre
 
 export default class SceneGravityCubes extends Scene3D {
-    constructor(nCubes, id = "canvas-scene", cubeModel) {
+    constructor(nCubes, id = "canvas-scene", cubeModel, btnId = "btn-access") {
         super(id)
+
+        /** bouton : posé par-dessus la scène, ses bounds donnent la capsule */
+        this.btnElement = new DomElement(btnId)
 
         /** modèle du cube : chargé une fois par le scénario (main.js), chaque cube en reçoit un clone */
         this.cubeModel = cubeModel
@@ -75,19 +80,63 @@ export default class SceneGravityCubes extends Scene3D {
             left: new Wall("blue", CUBE_SIZE),
             right: new Wall("blue", CUBE_SIZE)
         }
-
-        /** maze */
-        this.wallMaze1 = new Wall("white", CUBE_SIZE)
-        this.wallMaze2 = new Wall("white", CUBE_SIZE)
-        this.world.add(this.wallMaze1)
-        this.world.add(this.wallMaze2)
         Object.values(this.walls).forEach(w => { this.world.add(w) })
 
         /** le monde physique : les mêmes objets, côté Matter.js */
-        Composite.add(this.engine.world, [...this.cubes, ...Object.values(this.walls), this.wallMaze1, this.wallMaze2].map(o => o.body))
+        Composite.add(this.engine.world, [...this.cubes, ...Object.values(this.walls)].map(o => o.body))
+
+        /** maze : deux capsules, créées au premier resize, comme celle du bouton */
+        this.wallMaze = []
+
+        /** capsule : créée au premier resize, aux dimensions et à la position du bouton */
+        this.wallCapsule = null
 
         /** init */
         this.resize()
+    }
+
+    /** même principe que pour la capsule du bouton : les barres du labyrinthe sont remplacées, les anciennes détruites */
+    updateWallMaze() {
+        this.wallMaze.forEach(w => {
+            w.removeFromParent()
+            Composite.remove(this.engine.world, w.body)
+            w.dispose()
+        })
+
+        /** une barre collée au bord gauche en haut, une au bord droit en bas ; le passage alterne */
+        const width_ = this.width * MAZE_WIDTH_RATIO // px
+        const offsetX_ = (this.width - width_) / 2 // px, du centre du canvas au centre d'une barre collée à un bord
+        const offsetY_ = this.height * MAZE_OFFSET_RATIO // px
+        const radius_ = WALL_THICKNESS / 2 // px, rayon d'une extrémité : décalées vers l'extérieur, les extrémités arrondies collées au bord sortent du cadre
+
+        this.wallMaze = [[-offsetX_ - radius_, offsetY_], [offsetX_ + radius_, -offsetY_]].map(([x, y]) => {
+            const wall_ = new WallCapsule(width_, WALL_THICKNESS, this.materials[0])
+            wall_.setPosition(x, y)
+            this.world.add(wall_)
+            Composite.add(this.engine.world, wall_.body)
+            return wall_
+        })
+    }
+
+    /** une capsule ne se redimensionne pas (les extrémités se déformeraient) : on la remplace, et on détruit l'ancienne */
+    updateWallCapsule() {
+        if (this.wallCapsule) {
+            this.wallCapsule.removeFromParent()
+            Composite.remove(this.engine.world, this.wallCapsule.body)
+            this.wallCapsule.dispose()
+        }
+
+        /** bounds du bouton : taille affichée et centre, relatif au canvas (mesurés au même instant) → repère de la scène */
+        const { left, right, top, bottom } = this.btnElement
+        const centerX_ = (left + right) / 2 - this.domElement.left // px
+        const centerY_ = (top + bottom) / 2 - this.domElement.top // px
+        const x_ = centerX_ - this.width / 2 // px, repère de la scène : origine au centre
+        const y_ = this.height / 2 - centerY_ // px, y vers le haut
+
+        this.wallCapsule = new WallCapsule(right - left, bottom - top, this.materials[0])
+        this.wallCapsule.setPosition(x_, y_)
+        this.world.add(this.wallCapsule)
+        Composite.add(this.engine.world, this.wallCapsule.body)
     }
 
     update() {
@@ -140,6 +189,12 @@ export default class SceneGravityCubes extends Scene3D {
         this.world.rotation.set(-toRadians(beta), -toRadians(gamma), 0, 'ZXY')
     }
 
+    /** au scroll, la position du canvas et celle du bouton changent ensemble : on mesure les deux */
+    scroll() {
+        super.scroll()
+        this.btnElement.measure()
+    }
+
     resize() {
         super.resize()
 
@@ -159,17 +214,13 @@ export default class SceneGravityCubes extends Scene3D {
             right.setPosition(this.width / 2 + WALL_THICKNESS / 2, 0)
         }
 
-        /** maze : une barre collée au bord gauche en haut, une au bord droit en bas ; le passage alterne (si elles existent déjà) */
-        if (this.wallMaze1) {
-            const width_ = this.width * MAZE_WIDTH_RATIO // px
-            const offsetX_ = (this.width - width_) / 2 // px, du centre du canvas au centre d'une barre collée à un bord
-            const offsetY_ = this.height * MAZE_OFFSET_RATIO // px
+        /** maze (si le labyrinthe existe déjà) */
+        if (this.wallMaze) this.updateWallMaze()
 
-            this.wallMaze1.setSize(width_, WALL_THICKNESS)
-            this.wallMaze1.setPosition(-offsetX_, offsetY_)
-
-            this.wallMaze2.setSize(width_, WALL_THICKNESS)
-            this.wallMaze2.setPosition(offsetX_, -offsetY_)
+        /** capsule : le bouton est mesuré après le canvas, au même resize (s'il existe déjà) */
+        if (this.btnElement) {
+            this.btnElement.measure()
+            this.updateWallCapsule()
         }
 
         /** cubes restés hors du cadre (canvas rétréci) : ramenés entre les murs, sinon ils tomberaient hors du monde */

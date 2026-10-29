@@ -7,7 +7,6 @@
 :root {
     --black: #000;
     --white: #fff;
-    --space-300: 0.5rem;
     --space-500: 1rem;
     --radius: 1.5rem;
     --page-width: 40rem;
@@ -68,23 +67,7 @@ main {
     padding: var(--space-500);
 }
 
-/* en-tête : les boutons (et le debug) au-dessus des scènes, avec de l'air au-dessus et au-dessous */
-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-300);
-    padding-block: var(--space-300);
-}
-
 /* 4. Boutons : pleins (blanc, texte noir), au contour blanc au toucher */
-.buttons {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--space-300);
-}
-
 button {
     padding: 0.75em 2.85em;
     border: 1px solid var(--white);
@@ -154,6 +137,15 @@ button:focus-visible {
     border-radius: inherit;
     pointer-events: none;
     box-shadow: inset 0 0 1.5rem rgba(0, 0, 0, 0.4), inset 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+}
+
+/* bouton par-dessus la scène : centré (inset + margin auto), à sa taille naturelle (fit-content) */
+.scene-button {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: fit-content;
+    height: fit-content;
 }
 
 /* flou de ce qui est derrière le conteneur (l'image de fond), pas de son contenu */
