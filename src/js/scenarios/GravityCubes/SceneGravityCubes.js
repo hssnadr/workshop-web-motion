@@ -6,7 +6,7 @@ import Wall from "./Wall"
 import { clamp, randomRange } from "../../utils/math/MathUtils"
 
 const CAMERA_DISTANCE = 100 // px, la caméra regarde le plan z = 0 depuis z = 100
-const CUBE_SIZE = 20 // px, longueur d'une arête
+const CUBE_SIZE = 30 // px, longueur d'une arête
 const CUBE_COLORS = ["red", "yellow", "blue"]
 const WALL_THICKNESS = 15 // px
 const STANDARD_GRAVITY = 9.81 // m/s²
@@ -15,8 +15,11 @@ const MAZE_WIDTH_RATIO = 2 / 3 // part de la largeur du canvas couverte par une 
 const MAZE_OFFSET_RATIO = 1 / 6 // part de la hauteur du canvas entre son centre et une barre
 
 export default class SceneGravityCubes extends Scene3D {
-    constructor(nCubes, id = "canvas-scene") {
+    constructor(nCubes, id = "canvas-scene", cubeModel) {
         super(id)
+
+        /** modèle du cube : chargé une fois par le scénario (main.js), chaque cube en reçoit un clone */
+        this.cubeModel = cubeModel
 
         /** caméra orthographique : pas de perspective, son cadre (left, right, top, bottom) est réglé au resize */
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2 * CAMERA_DISTANCE)
@@ -31,10 +34,13 @@ export default class SceneGravityCubes extends Scene3D {
         this.windowContext.useDeviceAcceleration = true
         this.engine.gravity.scale *= GRAVITY_SCALE_FACTOR
 
+        /** materials : un par couleur, partagés par les cubes de cette couleur ; ils appartiennent à la scène, qui les détruit */
+        this.materials = CUBE_COLORS.map(color => new THREE.MeshBasicMaterial({ color }))
+
         /** cubes : positions en px, tirées dans le canvas (origine au centre) */
         this.cubes = []
         for (let i = 0; i < nCubes; i++) {
-            const cube_ = new Cube3D(CUBE_SIZE, CUBE_COLORS[i % CUBE_COLORS.length])
+            const cube_ = new Cube3D(CUBE_SIZE, this.cubeModel, this.materials[i % this.materials.length])
             cube_.setPosition(
                 randomRange(-this.width / 2 + CUBE_SIZE, this.width / 2 - CUBE_SIZE),
                 randomRange(-this.height / 2 + CUBE_SIZE, this.height / 2 - CUBE_SIZE)
@@ -73,7 +79,7 @@ export default class SceneGravityCubes extends Scene3D {
 
     /** échanges entre scènes, par des méthodes publiques, comme les scènes 2D : position en px, repère de la scène */
     addCube(x, y) {
-        const cube_ = new Cube3D(CUBE_SIZE, CUBE_COLORS[Math.floor(CUBE_COLORS.length * Math.random())])
+        const cube_ = new Cube3D(CUBE_SIZE, this.cubeModel, this.materials[Math.floor(this.materials.length * Math.random())])
         cube_.setPosition(x, y)
         this.cubes.push(cube_)
         this.add(cube_)
@@ -81,8 +87,7 @@ export default class SceneGravityCubes extends Scene3D {
     }
 
     removeCube(cube) {
-        /** three.js */
-        cube.dispose()
+        /** three.js : géométrie et matériau restent, partagés avec les autres cubes */
         cube.removeFromParent()
 
         /** Matter.js */
@@ -144,6 +149,12 @@ export default class SceneGravityCubes extends Scene3D {
 
     destroy() {
         super.destroy()
+        this.cubeModel.traverse(o => {
+            if (!o.isMesh) return
+            o.geometry.dispose()
+            ;[o.material].flat().forEach(m => { m.dispose() }) // matériaux d'origine du glb, plus utilisés par les cubes
+        })
+        this.materials.forEach(m => { m.dispose() })
         Composite.clear(this.engine.world)
         Runner.stop(this.runner) // sinon la boucle du moteur continue après destroy
         Engine.clear(this.engine)
