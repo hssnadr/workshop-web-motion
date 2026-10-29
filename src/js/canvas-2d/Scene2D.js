@@ -20,16 +20,15 @@ export default class Scene2D {
         this.context = this.canvas.getContext('2d')
         if (this.debug.isActive) this.debugFolder.add(this.domElement, 'isVisible').listen().disable()
 
-        /** pas de resize ici : le scénario l'appelle, une fois son propre état prêt */
+        /** init */
+        this.resize()
     }
 
     get width() { return this.domElement.width }
     get height() { return this.domElement.height }
-    get isVisible() { return this.domElement.isVisible }
 
     clear() { this.context.clearRect(0, 0, this.width, this.height) }
 
-    /** un pas de simulation : défini par chaque scénario */
     update() {}
 
     resize() {
@@ -41,21 +40,17 @@ export default class Scene2D {
 
         /** on dessine toujours en px CSS : le contexte applique la même homothétie */
         this.context.scale(pixelRatio_, pixelRatio_)
-
-        /** changer la taille du bitmap l'efface : on redessine */
-        this.draw()
     }
 
     /** au scroll, seule la position dans la fenêtre change */
     scroll() { this.domElement.measure() }
 
-    /** contenu : défini par chaque scénario */
+    /** contenu de la frame */
     draw() {}
 
     /** hooks : entrées diffusées par le WindowContext */
     onDeviceOrientation() {}
     onDeviceAcceleration() {}
-    onSensorsAllowed() {}
 
     destroy() {
         this.clear()

@@ -6,9 +6,13 @@ import DeviceOrientation from "./utils/device/DeviceOrientation"
 /** singleton : l'instance unique, partagée par toutes les scènes */
 let instance = null
 
-const MAX_PIXEL_RATIO = 2 // au-delà, le coût de rendu augmente sans gain visible
-
 export default class WindowContext {
+    #isSensorsAllowed = false
+    
+    /** nombre de pixels de l'écran par px CSS (1 sur un écran standard, 2 ou 3 sur un écran haute densité) */
+    get pixelRatio() { return Math.min(window.devicePixelRatio, 2) }
+    get isSensorsAllowed() { return this.#isSensorsAllowed }
+
     constructor() {
         if (instance) return instance
         instance = this
@@ -34,7 +38,7 @@ export default class WindowContext {
     addScene(scene) { this.scenes.push(scene) }
 
     /** culling : seules les scènes visibles font un pas */
-    update() { this.scenes.forEach(s => { if (s.isVisible) s.update() }) }
+    update() { this.scenes.forEach(s => { if (s.domElement.isVisible) s.update() }) }
 
     resize() { this.scenes.forEach(s => { s.resize() }) }
     scroll() { this.scenes.forEach(s => { s.scroll() }) }
@@ -45,7 +49,7 @@ export default class WindowContext {
     set useDeviceOrientation(isActive) {
         if (isActive && !this.orientation) {
             this.orientation = new DeviceOrientation()
-            this.handleOrientation = () => { this.deviceOrientation() }
+            this.handleOrientation = () => { this.onDeviceOrientation() }
             this.orientation.on('reading', this.handleOrientation)
         }
         if (!isActive && this.orientation) {
@@ -56,15 +60,15 @@ export default class WindowContext {
     }
 
     /** même schéma que resize : une mesure, répercutée à toutes les scènes */
-    deviceOrientation() {
-        this.#allowSensors()
+    onDeviceOrientation() {
+        this.#isSensorsAllowed = true
         this.scenes.forEach(s => { s.onDeviceOrientation() })
     }
 
     set useDeviceAcceleration(isActive) {
         if (isActive && !this.acceleration) {
             this.acceleration = new DeviceAcceleration()
-            this.handleAcceleration = () => { this.deviceAcceleration() }
+            this.handleAcceleration = () => { this.onDeviceAcceleration() }
             this.acceleration.on('reading', this.handleAcceleration)
         }
         if (!isActive && this.acceleration) {
@@ -74,23 +78,9 @@ export default class WindowContext {
         }
     }
 
-    deviceAcceleration() {
-        this.#allowSensors()
-        this.scenes.forEach(s => { s.onDeviceAcceleration() })
-    }
-
-    /**
-     * SENSORS : faux tant qu'aucune mesure n'est arrivée (ordinateur, ou accès refusé / pas encore demandé sur iOS)
-     * la première mesure le fait passer à vrai, une seule fois : les scènes en sont prévenues, il ne repasse jamais à faux
-     */
-    #isSensorsAllowed = false
-
-    get isSensorsAllowed() { return this.#isSensorsAllowed }
-
-    #allowSensors() {
-        if (this.#isSensorsAllowed) return
+    onDeviceAcceleration() {
         this.#isSensorsAllowed = true
-        this.scenes.forEach(s => { s.onSensorsAllowed() })
+        this.scenes.forEach(s => { s.onDeviceAcceleration() })
     }
 
     /**
@@ -109,7 +99,4 @@ export default class WindowContext {
         window.removeEventListener('resize', this.handleResize)
         instance = null // un nouveau WindowContext repartira de zéro
     }
-
-    /** nombre de pixels de l'écran par px CSS (1 sur un écran standard, 2 ou 3 sur un écran haute densité) */
-    get pixelRatio() { return Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO) }
 }

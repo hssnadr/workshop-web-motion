@@ -39,11 +39,11 @@ export default class SceneGravityCubes extends Scene3D {
 
         /** world : ce qui est attaché à l'écran (objets et caméra) ; la lumière (l'HDRI) reste fixe, attachée à la scène */
         this.world = new THREE.Group()
-        this.scene.add(this.world)
+        this.add(this.world)
         this.world.add(this.camera)
 
         /** lumière : l'HDRI mesure la lumière qui arrive de chaque direction ; elle éclaire tous les matériaux de la scène */
-        this.environmentMap = new HDRLoader().load(hdriUrl, () => { this.scene.environment = this.environmentMap }) // asynchrone : la scène n'est éclairée qu'une fois l'image chargée
+        this.environmentMap = new HDRLoader().load(hdriUrl, () => { this.environment = this.environmentMap }) // asynchrone : la scène n'est éclairée qu'une fois l'image chargée
         this.environmentMap.mapping = THREE.EquirectangularReflectionMapping // rectangle (longitude, latitude) → sphère des directions
 
         /** params : des curseurs */
@@ -51,11 +51,11 @@ export default class SceneGravityCubes extends Scene3D {
         this.params.environmentIntensity = 1 // × intensité de l'HDRI
         if (this.debug.isActive) {
             this.debugFolder.add(this.params, 'pixelRatio', 0.5, 3).onFinishChange(() => { this.resize() }) // redimensionne le bitmap : une fois le curseur relâché
-            this.debugFolder.add(this.params, 'environmentIntensity', 0, 3).onChange(() => { this.scene.environmentIntensity = this.params.environmentIntensity })
+            this.debugFolder.add(this.params, 'environmentIntensity', 0, 3).onChange(() => { this.environmentIntensity = this.params.environmentIntensity })
         }
 
         /** materials : partagés ; MeshPhysicalMaterial ajoute le vernis (clearcoat) à MeshStandardMaterial */
-        this.materials = CUBE_MATERIALS.map(parameters => new THREE.MeshPhysicalMaterial(parameters))
+        this.materials = CUBE_MATERIALS.map(parameters => new THREE.MeshStandardMaterial(parameters))
 
         /** physics : le moteur et sa propre boucle (Runner), qui le fait avancer à chaque image */
         this.engine = Engine.create()
@@ -104,7 +104,9 @@ export default class SceneGravityCubes extends Scene3D {
 
     /** même principe que pour la capsule du bouton : les barres du labyrinthe sont remplacées, les anciennes détruites */
     updateWallMaze() {
-        this.wallMaze.forEach(w => {
+        if (!this.materials) return // appelé avant la fin du constructeur : rien à construire encore
+
+        this.wallMaze?.forEach(w => {
             w.removeFromParent()
             Composite.remove(this.engine.world, w.body)
             w.dispose()
@@ -178,9 +180,6 @@ export default class SceneGravityCubes extends Scene3D {
         this.cubes = this.cubes.filter(c => c !== cube)
     }
 
-    /** accès accordé : le bouton s'efface (classe CSS, transition d'opacité) ; il garde sa place, donc la capsule aussi */
-    onSensorsAllowed() { this.btnElement.element.classList.add("is-hidden") }
-
     onDeviceAcceleration() {
         const { x, y } = this.windowContext.acceleration
         this.debug.domDebug = `accélération x ${x.toFixed(2)} · y ${y.toFixed(2)} m/s²`
@@ -219,25 +218,27 @@ export default class SceneGravityCubes extends Scene3D {
         this.camera.bottom = -this.height / 2
         this.camera.updateProjectionMatrix() // sans elle, la caméra garde son ancien cadre
 
-        /** murs : juste à l'extérieur des bords gauche et droit, deux fois plus hauts que le canvas */
-        const { left, right } = this.walls
-        left.setSize(WALL_THICKNESS, 2 * this.height)
-        left.setPosition(-this.width / 2 - WALL_THICKNESS / 2, 0)
-        right.setSize(WALL_THICKNESS, 2 * this.height)
-        right.setPosition(this.width / 2 + WALL_THICKNESS / 2, 0)
+        /** murs : juste à l'extérieur des bords gauche et droit, deux fois plus hauts que le canvas (s'ils existent déjà) */
+        if (this.walls) {
+            const { left, right } = this.walls
+            left.setSize(WALL_THICKNESS, 2 * this.height)
+            left.setPosition(-this.width / 2 - WALL_THICKNESS / 2, 0)
+            right.setSize(WALL_THICKNESS, 2 * this.height)
+            right.setPosition(this.width / 2 + WALL_THICKNESS / 2, 0)
+        }
 
         /** maze */
         this.updateWallMaze()
 
-        /** capsule : le bouton est mesuré après le canvas, au même resize */
-        this.btnElement.measure()
-        this.updateWallCapsule()
+        /** capsule : le bouton est mesuré après le canvas, au même resize (s'il existe déjà) */
+        if (this.btnElement) {
+            this.btnElement.measure()
+            this.updateWallCapsule()
+        }
 
         /** cubes restés hors du cadre (canvas rétréci) : ramenés entre les murs, sinon ils tomberaient hors du monde */
         const limitX_ = this.width / 2 - CUBE_SIZE // px
-        this.cubes.forEach(c => { c.setPosition(clamp(c.position.x, -limitX_, limitX_), c.position.y) })
-
-        this.render()
+        this.cubes?.forEach(c => { c.setPosition(clamp(c.position.x, -limitX_, limitX_), c.position.y) })
     }
 
     destroy() {
@@ -249,8 +250,8 @@ export default class SceneGravityCubes extends Scene3D {
         })
         this.materials.forEach(m => { m.dispose() })
         Object.values(this.walls).forEach(w => { w.dispose() })
-        this.wallMaze.forEach(w => { w.dispose() })
-        this.wallCapsule.dispose()
+        this.wallMaze?.forEach(w => { w.dispose() })
+        this.wallCapsule?.dispose()
         this.environmentMap.dispose()
         Composite.clear(this.engine.world)
         Runner.stop(this.runner) // sinon la boucle du moteur continue après destroy

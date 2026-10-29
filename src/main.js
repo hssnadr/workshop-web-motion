@@ -9,9 +9,9 @@ import { isMobileDevice } from "./js/utils/system"
  * BUTTONS
  */
 
-/** motion sensor autorization (iOS) : le bouton ne s'affiche que sur mobile (tablettes ignorées) ; sinon seulement transparent, il garde sa place */
+/** motion sensor autorization (iOS) : le bouton ne s'affiche que sur mobile ; sinon seulement transparent, il garde sa place */
 const btnAccess = document.getElementById("btn-access")
-if (!isMobileDevice(true)) btnAccess.classList.add("is-hidden")
+if (!isMobileDevice()) btnAccess.classList.add("is-hidden")
 btnAccess.addEventListener("click", () => { askMotionAccess() })
 
 /** reload */
@@ -34,6 +34,9 @@ const scene3 = new SceneBouncingBubbles(0, "canvas-scene-2")
  * scènes 2D : repère du canvas (origine en haut à gauche, y vers le bas) ; scène 3D : origine au centre, y vers le haut
  */
 const update = () => {
+    /** accès accordé : le bouton s'efface (classe CSS, transition d'opacité) ; il garde sa place, donc la capsule aussi */
+    if (windowContext.isSensorsAllowed) btnAccess.classList.add("is-hidden")
+
     /** scan bubbles */
     const outScene1_up_ = scene1.bubbles.filter(b => b.y < -b.radius)
     const outScene1_down_ = scene1.bubbles.filter(b => b.y > scene1.height + b.radius)
